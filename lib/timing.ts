@@ -1,4 +1,4 @@
-import { inputToMin, minToInput, roundUp5 } from "./time";
+import { DAY, inputToMin, minToInput, roundUp5 } from "./time";
 import { MIN_GOOD_SLEEP_MINUTES, NAP_MODE_MINUTES } from "./types";
 import type { TimingInputs } from "./storage";
 
@@ -54,4 +54,42 @@ export function checkTiming(t: TimingInputs, nowMin: number): TimingCheck {
     if (sleep - start < 60) warnings.push("You have less than an hour to study. We'll still make you a short, useful plan.");
   }
   return { errors, warnings, nap, ok: !errors.exam && !errors.start && !errors.sleep };
+}
+
+const utc = (min: number) => new Date(min * 60000);
+
+/** "Thu 22 Oct" for a local-epoch minute. */
+export function shortDate(min: number) {
+  return utc(min)
+    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .replace(",", "");
+}
+
+export function weekday(min: number) {
+  return utc(min).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+}
+
+/** "Today", "Tomorrow", or a short date. With `night`, evening/early-morning times within a day read "Tonight". */
+export function dayLabel(min: number, nowMin: number, night = false) {
+  const hour = Math.floor(mod24(min) / 60);
+  if (night && min - nowMin < DAY && min >= nowMin && (hour >= 18 || hour < 6)) return "Tonight";
+  const diff = Math.floor(min / DAY) - Math.floor(nowMin / DAY);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  return shortDate(min);
+}
+
+const mod24 = (m: number) => ((m % DAY) + DAY) % DAY;
+
+export function clockOf(min: number) {
+  const d = mod24(min);
+  return `${String(Math.floor(d / 60)).padStart(2, "0")}:${String(d % 60).padStart(2, "0")}`;
+}
+
+/** First moment after `startMin` whose wall-clock time is `hhmm`. */
+export function nextClock(startMin: number, hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  let c = Math.floor(startMin / DAY) * DAY + h * 60 + m;
+  if (c <= startMin) c += DAY;
+  return c;
 }

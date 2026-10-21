@@ -1,4 +1,6 @@
 import type { AppState } from "@/lib/storage";
+import { checkTiming, clockOf, dayLabel, shortDate } from "@/lib/timing";
+import { durationLabel, inputToMin, toLocalMin } from "@/lib/time";
 import Stepper from "./Stepper";
 
 export default function GenerateStep({
@@ -14,22 +16,65 @@ export default function GenerateStep({
   onBack: () => void;
   onBuild: () => void;
 }) {
-  const fmt = (v: string) => v.replace("T", " at ");
+  const nowMin = toLocalMin(new Date());
+  const start = inputToMin(state.timing.startAt)!;
+  const sleep = inputToMin(state.timing.sleepAt)!;
+  const exam = inputToMin(state.timing.examAt)!;
+  const nap = checkTiming(state.timing, nowMin).nap;
+  const total = Math.max(1, exam - start);
+  const studyPct = Math.min(100, Math.max(0, ((sleep - start) / total) * 100));
+
+  const rows: [string, React.ReactNode][] = [
+    ["Exam", `${shortDate(exam)} · ${clockOf(exam)}`],
+    ["Start studying", `${dayLabel(start, nowMin)} · ${clockOf(start)}`],
+    [nap ? "Nap" : "Sleep", `${dayLabel(sleep, nowMin, true)} · ${clockOf(sleep)}`],
+    [
+      "Topics",
+      state.topics.map((t, i) => (
+        <span key={t.id}>
+          {i > 0 && ", "}
+          {t.name}
+          {t.subject && <span className="font-normal text-muted"> · {t.subject}</span>}
+        </span>
+      )),
+    ],
+  ];
+
   return (
     <section>
       <Stepper step={3} />
-      <h1 className="page-title mb-2"><span aria-hidden="true">✨ </span>Ready when you are.</h1>
-      <p className="mb-6 text-muted">One click and your plan is done.</p>
-      <dl className="card mb-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-        <dt className="text-muted">Exam</dt>
-        <dd>{fmt(state.timing.examAt)}</dd>
-        <dt className="text-muted">Start studying</dt>
-        <dd>{fmt(state.timing.startAt)}</dd>
-        <dt className="text-muted">Sleep</dt>
-        <dd>{fmt(state.timing.sleepAt)}</dd>
-        <dt className="text-muted">Topics</dt>
-        <dd>{state.topics.length}</dd>
+      <h1 className="page-title mb-2">Ready when you are.</h1>
+      <p className="mb-8 text-lg text-muted">Check this looks right, then we&apos;ll build your night.</p>
+
+      <div className="card mb-5">
+        <div
+          role="img"
+          aria-label={`Study ${durationLabel(sleep - start)}, then ${nap ? "nap" : "sleep"} ${durationLabel(exam - sleep)}`}
+          className="flex h-3 overflow-hidden rounded-full"
+        >
+          <div className="h-full" style={{ width: `${studyPct}%`, background: "var(--dot-study)" }} />
+          <div className="h-full flex-1" style={{ background: "var(--dot-sleep)" }} />
+        </div>
+        <div className="tnum relative mt-2 h-5 font-mono text-sm text-muted" aria-hidden="true">
+          <span className="absolute left-0">{clockOf(start)}</span>
+          <span className="absolute -translate-x-1/2" style={{ left: `${Math.min(88, Math.max(12, studyPct))}%` }}>{clockOf(sleep)}</span>
+          <span className="absolute right-0">{clockOf(exam)}</span>
+        </div>
+        <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-study)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />Study · {durationLabel(sleep - start)}</li>
+          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-sleep)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />{nap ? "Nap" : "Sleep"} · {durationLabel(exam - sleep)}</li>
+        </ul>
+      </div>
+
+      <dl className="card mb-6 !py-2">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex items-start justify-between gap-6 border-t border-line py-4 first:border-t-0">
+            <dt className="text-muted">{k}</dt>
+            <dd className="text-right font-bold">{v}</dd>
+          </div>
+        ))}
       </dl>
+
       <div aria-live="polite" className="mb-3 min-h-6">
         {building && <p role="status" className="font-semibold">Making your plan...</p>}
         {error && <p role="alert" className="text-danger">{error}</p>}
