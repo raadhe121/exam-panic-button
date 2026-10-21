@@ -18,6 +18,7 @@
 - AI-generated or hand-written flashcards and multiple-choice quizzes per exam
 - Calendar export (.ics download, works without an account)
 - Push reminders before each block (web push, needs sign-in)
+- "I'm panicking" 60-second breathing exercise, "I'm behind" re-plan from now, syllabus paste to topics (AI with rule-based fallback), morning-of 15-minute checklist
 - Guest mode still works with no account: plan, localStorage, print, .ics
 
 ## Still out of scope

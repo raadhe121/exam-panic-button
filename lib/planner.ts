@@ -83,7 +83,7 @@ function span(entries: Entry[]) {
 }
 
 export function napMode(input: PlanInput) {
-  return input.examMin - input.startMin < NAP_MODE_MINUTES;
+  return input.nap ?? input.examMin - input.startMin < NAP_MODE_MINUTES;
 }
 
 export function buildLocalPlan(input: PlanInput): PlanResult {

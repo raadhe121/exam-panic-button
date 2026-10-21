@@ -30,7 +30,7 @@ function parseInput(body: unknown): PlanInput | null {
       starred: o.starred === true,
     });
   }
-  return { startMin: s, sleepMin: z, examMin: e, topics };
+  return { startMin: s, sleepMin: z, examMin: e, topics, nap: typeof b.nap === "boolean" ? b.nap : undefined };
 }
 
 export async function POST(req: Request) {

@@ -14,6 +14,8 @@ export interface PlanInput {
   sleepMin: number;
   examMin: number;
   topics: Topic[];
+  /** Force nap or full-sleep mode (used when re-planning mid-night). */
+  nap?: boolean;
 }
 
 export type BlockType = "study" | "break" | "revision" | "sleep";

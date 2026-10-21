@@ -23,6 +23,39 @@ export default function TopicsStep({
   const [subject, setSubject] = useState("");
   const [error, setError] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
+  const [syllabus, setSyllabus] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [syllabusMsg, setSyllabusMsg] = useState("");
+
+  const importSyllabus = async () => {
+    setParsing(true);
+    setSyllabusMsg("");
+    try {
+      const res = await fetch("/api/topics", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: syllabus }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      const have = new Set(topics.map((t) => t.name.toLowerCase()));
+      const fresh = (j.topics as { name: string; subject?: string }[]).filter((t) => !have.has(t.name.toLowerCase()));
+      const room = MAX_TOPICS - topics.length;
+      const added = fresh.slice(0, room);
+      onChange([
+        ...topics,
+        ...added.map((t) => ({ id: crypto.randomUUID(), name: t.name, subject: t.subject ?? "", rating: "shaky" as Rating, starred: false })),
+      ]);
+      setSyllabus("");
+      setSyllabusMsg(
+        `Added ${added.length} topic${added.length === 1 ? "" : "s"}. Now rate each one below.` +
+          (fresh.length > room ? ` We stopped at ${MAX_TOPICS}.` : ""),
+      );
+    } catch (e) {
+      setSyllabusMsg(e instanceof Error && e.message ? e.message : "Couldn't read that. Please try again or add topics by hand.");
+    }
+    setParsing(false);
+  };
 
   const add = () => {
     const n = name.trim();
@@ -42,6 +75,20 @@ export default function TopicsStep({
       <Stepper step={2} />
       <h1 className="mb-1 text-3xl font-bold">What do you need to cover?</h1>
       <p className="mb-6 text-muted">Add each topic and be honest about how well you know it. Up to {MAX_TOPICS}.</p>
+
+      <details className="card mb-4">
+        <summary className="cursor-pointer font-semibold">Paste your syllabus instead</summary>
+        <div className="mt-3 flex flex-col gap-3">
+          <label htmlFor="syllabus" className="text-muted">Paste a syllabus or chapter list and we&apos;ll turn it into topics.</label>
+          <textarea id="syllabus" className="input min-h-32" value={syllabus} maxLength={6000} onChange={(e) => setSyllabus(e.target.value)} />
+          <div className="flex justify-end">
+            <button type="button" className="btn" disabled={parsing || syllabus.trim().length < 3} onClick={importSyllabus}>
+              {parsing ? "Reading..." : "Turn into topics"}
+            </button>
+          </div>
+        </div>
+      </details>
+      <p role="status" className="mb-4 text-muted empty:hidden">{syllabusMsg}</p>
 
       <form
         className="card mb-6 flex flex-col gap-4"

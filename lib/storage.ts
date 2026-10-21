@@ -22,6 +22,11 @@ export interface StoredPlan {
   source: "ai" | "fallback";
   nap: boolean;
   studyWindowMin: number;
+  /** Exam start, for the morning-of screen. */
+  examMs?: number;
+  /** Set when the plan was rebuilt mid-night with "I'm behind". */
+  replannedAt?: number;
+  morningDone?: Record<number, boolean>;
 }
 
 export type Stage = "landing" | "timing" | "topics" | "generate" | "plan";

@@ -38,6 +38,12 @@ Exam in the future; exam after start; sleep after start and before exam; 1 to 15
 ## Accessibility
 Labelled inputs, radio groups for ratings with text labels, `aria-current` on the Now block, progressbar role, live regions for status and errors, visible focus rings, reduced-motion respected.
 
+## Extras
+- Breathing: `BreathingDialog` (native dialog, 60 s, 4 s in / 4 s out, then scrolls back to the Now block).
+- Re-plan: `lib/replan.ts` finds topics whose first block isn't ticked; the plan is rebuilt from now to the original sleep time with the original sleep/nap mode (`PlanInput.nap`). Sleep stays protected and lower-priority topics are dropped first.
+- Syllabus: `POST /api/topics` asks Claude for a topic list, falling back to `lib/syllabus.ts` line splitting. No login needed.
+- Morning-of: `MorningChecklist` appears automatically after the sleep block ends (and on demand from a button).
+
 ## Accounts and saved data (optional layer)
 - `lib/supabase.ts`: browser client, null when env vars are missing (the app then runs as a guest-only app).
 - `supabase/schema.sql`: tables `exams`, `notes`, `flashcards`, `quiz_questions`, `push_subscriptions`, `reminders`; every table has a row level security policy so users only see their own rows.

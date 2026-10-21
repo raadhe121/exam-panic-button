@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
 import { durationLabel } from "@/lib/time";
+import BreathingDialog from "./BreathingDialog";
+import MorningChecklist from "./MorningChecklist";
 
 const TYPE_LABEL: Record<StoredBlock["type"], string> = {
   study: "Study",
@@ -25,16 +27,26 @@ export default function PlanView({
   onToggle,
   onEdit,
   onStartOver,
+  onReplan,
+  onToggleMorning,
+  replanning,
+  replanMsg,
   extra,
 }: {
   plan: StoredPlan;
   onToggle: (i: number) => void;
   onEdit: () => void;
   onStartOver: () => void;
+  onReplan: () => void;
+  onToggleMorning: (i: number) => void;
+  replanning: boolean;
+  replanMsg: string;
   extra?: React.ReactNode;
 }) {
   const [now, setNow] = useState<number | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [breathing, setBreathing] = useState(false);
+  const [showMorning, setShowMorning] = useState(false);
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
@@ -49,6 +61,13 @@ export default function PlanView({
   const sleepMin = sleepBlock ? Math.round((sleepBlock.endMs - sleepBlock.startMs) / 60000) : 0;
   const nowIdx = now === null ? -1 : plan.blocks.findIndex((b) => now >= b.startMs && now < b.endMs);
   const notStarted = now !== null && now < plan.blocks[0].startMs;
+  const sleepEnd = sleepBlock?.endMs ?? plan.blocks[plan.blocks.length - 1].endMs;
+  const morning = now !== null && now >= sleepEnd && (!plan.examMs || now < plan.examMs + 3 * 3600000);
+  const behind = now === null ? 0 : plan.blocks.filter((b, i) => b.type === "study" && b.endMs <= now && !plan.done[i]).length;
+  const closeBreathing = () => {
+    setBreathing(false);
+    setTimeout(() => document.getElementById("now-block")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  };
   const hhmm = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
@@ -65,6 +84,33 @@ export default function PlanView({
           You have under an hour, so this plan is short. That&apos;s okay. A focused hour is still worth a lot.
         </p>
       )}
+
+      {plan.replannedAt && (
+        <p className="mb-4 rounded-lg border-2 border-line bg-surface2 px-3 py-2">
+          Re-planned at {hhmm(plan.replannedAt)}. We kept your sleep safe and focused on what matters most.
+        </p>
+      )}
+
+      <div className="no-print mb-4 flex flex-wrap gap-3">
+        <button type="button" className="btn btn-primary text-lg" onClick={() => setBreathing(true)}>
+          I&apos;m panicking
+        </button>
+        <button type="button" className="btn" onClick={onReplan} disabled={replanning}>
+          {replanning ? "Re-planning..." : "I'm behind: re-plan from now"}
+        </button>
+        <button type="button" className="btn" onClick={() => setShowMorning((v) => !v)} aria-expanded={showMorning}>
+          Morning-of checklist
+        </button>
+      </div>
+      {behind > 0 && !replanMsg && (
+        <p className="mb-4 text-muted">You have {behind} unticked block{behind > 1 ? "s" : ""} from earlier. That&apos;s okay. Tap &quot;I&apos;m behind&quot; and we&apos;ll rebuild the rest of the night.</p>
+      )}
+      <p role="status" className="mb-4 text-muted empty:hidden">{replanMsg}</p>
+
+      {(morning || showMorning) && (
+        <MorningChecklist plan={plan} now={now} onToggle={onToggleMorning} onBreathe={() => setBreathing(true)} />
+      )}
+      {breathing && <BreathingDialog onClose={closeBreathing} />}
 
       <dl className="mb-4 grid grid-cols-3 gap-3 text-center">
         <div className="card p-3">
@@ -113,6 +159,7 @@ export default function PlanView({
           return (
             <li
               key={i}
+              id={isNow ? "now-block" : undefined}
               aria-current={isNow ? "step" : undefined}
               className={`rounded-2xl border-2 p-4 ${isNow ? "border-accent bg-now" : "border-line bg-surface"} ${b.type === "break" ? "ml-4" : ""}`}
             >
