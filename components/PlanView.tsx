@@ -25,11 +25,13 @@ export default function PlanView({
   onToggle,
   onEdit,
   onStartOver,
+  extra,
 }: {
   plan: StoredPlan;
   onToggle: (i: number) => void;
   onEdit: () => void;
   onStartOver: () => void;
+  extra?: React.ReactNode;
 }) {
   const [now, setNow] = useState<number | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -160,6 +162,8 @@ export default function PlanView({
           </ul>
         </div>
       )}
+
+      {extra}
 
       <div className="no-print flex flex-wrap gap-3">
         <button type="button" className="btn" onClick={onEdit}>Edit topics</button>

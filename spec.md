@@ -1,7 +1,7 @@
 # Technical spec
 
 ## Stack
-Next.js (App Router) + React + Tailwind CSS v4, deployed on Vercel. No database.
+Next.js (App Router) + React + Tailwind CSS v4, deployed on Vercel. Guests need no database. Accounts and saved data use Supabase (Postgres + Auth + row level security).
 
 ## Flow / state
 `components/PanicApp.tsx` holds the state: `stage` (landing, timing, topics, generate, plan), timing inputs, topics, and the stored plan (blocks with absolute timestamps and a `done` map). All of it is saved to localStorage (`epb:v1`); theme is stored in `epb:theme`.
@@ -38,5 +38,14 @@ Exam in the future; exam after start; sleep after start and before exam; 1 to 15
 ## Accessibility
 Labelled inputs, radio groups for ratings with text labels, `aria-current` on the Now block, progressbar role, live regions for status and errors, visible focus rings, reduced-motion respected.
 
+## Accounts and saved data (optional layer)
+- `lib/supabase.ts`: browser client, null when env vars are missing (the app then runs as a guest-only app).
+- `supabase/schema.sql`: tables `exams`, `notes`, `flashcards`, `quiz_questions`, `push_subscriptions`, `reminders`; every table has a row level security policy so users only see their own rows.
+- Login: email and password on `/login` (session kept by supabase-js in the browser).
+- `/exams`: list, open, delete, new exam. `/exams/[id]`: tabs for Notes, Flashcards, Quiz.
+- `POST /api/flashcards` and `POST /api/quiz`: require a Bearer token (verified with Supabase), call Claude, validate JSON, return drafts that the browser saves.
+- Calendar: `lib/ics.ts` builds an .ics file from plan blocks (one-way export).
+- Push: `public/sw.js` shows notifications; `lib/push.ts` subscribes the browser; `lib/exams.ts#scheduleReminders` stores one reminder per upcoming block (5 min before); `GET /api/push/send` (Vercel Cron, `CRON_SECRET`) sends due reminders with `web-push`. Vercel Hobby only runs crons once a day, so use Pro (hourly in `vercel.json`) for timely reminders.
+
 ## Deploy
-Push to GitHub, import in Vercel, set `ANTHROPIC_API_KEY` (optional).
+Push to GitHub, import in Vercel, then set the variables in `.env.example` (all optional; features turn on as their variables are added). Run `supabase/schema.sql` in the Supabase SQL editor.

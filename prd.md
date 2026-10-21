@@ -27,3 +27,6 @@ Calm tone, dark mode first, large text (16px+), AA contrast, 44px targets, label
 ## Success measures
 - Time from landing to plan under 60 seconds.
 - Plan always generated, even with no API key or an AI failure.
+
+## Phase 2 (added)
+Signed-in students can save several exams, keep notes, practise with flashcards and quizzes (AI-generated or their own), export the plan to a calendar file and get push reminders before each block. Guests keep the original no-login experience.

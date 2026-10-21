@@ -7,8 +7,8 @@ import { checkTiming, defaultTiming } from "@/lib/timing";
 import { fromLocalMin, inputToMin, resolveBlocks, roundUp5, toLocalMin } from "@/lib/time";
 import type { PlanInput, PlanResponse, PlanResult } from "@/lib/types";
 import Landing from "./Landing";
+import PlanActions from "./PlanActions";
 import PlanView from "./PlanView";
-import ThemeToggle from "./ThemeToggle";
 import TimingStep from "./TimingStep";
 import TopicsStep from "./TopicsStep";
 import GenerateStep from "./GenerateStep";
@@ -90,16 +90,11 @@ export default function PanicApp() {
 
   const startOver = () => {
     clearState();
-    setState({ stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null });
+    setState({ stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null, examId: null });
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6 sm:py-10">
-      <header className="no-print mb-6 flex items-center justify-between">
-        <span className="font-semibold tracking-tight">Exam Panic Button</span>
-        <ThemeToggle />
-      </header>
-      <main id="main" className="flex-1">
+    <>
         {!state ? (
           <p className="text-muted" role="status">Loading...</p>
         ) : state.stage === "landing" ? (
@@ -133,13 +128,13 @@ export default function PanicApp() {
                 s && s.plan ? { ...s, plan: { ...s.plan, done: { ...s.plan.done, [i]: !s.plan.done[i] } } } : s,
               )
             }
+            extra={<PlanActions state={state} onSaved={(examId, examName) => patch({ examId, examName })} />}
             onEdit={() => go("topics")}
             onStartOver={startOver}
           />
         ) : (
           <Landing onStart={() => go("timing")} />
         )}
-      </main>
-    </div>
+    </>
   );
 }

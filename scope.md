@@ -9,10 +9,19 @@
 - "Now" highlight with countdown, per-block checkboxes, progress bar
 - Skipped / skim-only topic list when time is short
 - AI plan generation via one API route, with a rule-based fallback
-- Plan saved in localStorage; dark (default) and light themes; accessible, mobile-first UI
+- Guest plan saved in localStorage; dark (default) and light themes; accessible, mobile-first UI
 
-## Out of scope
-Accounts/login, multiple exams, notes, flashcards, quizzes, calendar sync, push notifications, database.
+## Added after v1 (originally out of scope, now built)
+- Accounts/login (Supabase email and password)
+- Multiple saved exams per account ("My exams")
+- Notes per exam
+- AI-generated or hand-written flashcards and multiple-choice quizzes per exam
+- Calendar export (.ics download, works without an account)
+- Push reminders before each block (web push, needs sign-in)
+- Guest mode still works with no account: plan, localStorage, print, .ics
+
+## Still out of scope
+Two-way calendar sync (Google/Outlook API), email/SMS reminders, sharing exams between users, teacher/admin features.
 
 ## Done when
 - Landing to full timed plan in under a minute

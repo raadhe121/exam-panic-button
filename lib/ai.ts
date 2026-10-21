@@ -32,7 +32,8 @@ ${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute
 ${topics}`;
 }
 
-export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
+/** Calls the Anthropic Messages API from the server. Returns the reply text, or null on any failure. */
+export async function askClaude(system: string, user: string, maxTokens = 4000): Promise<string | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   try {
@@ -45,18 +46,21 @@ export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
       },
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-        max_tokens: 4000,
-        system: SYSTEM,
-        messages: [{ role: "user", content: buildPrompt(input) }],
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: "user", content: user }],
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(25000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; text?: string }[] };
-    const text = data.content?.find((c) => c.type === "text")?.text;
-    if (!text) return null;
-    return validatePlan(extractJson(text), input);
+    return data.content?.find((c) => c.type === "text")?.text ?? null;
   } catch {
     return null;
   }
+}
+
+export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
+  const text = await askClaude(SYSTEM, buildPrompt(input));
+  return text ? validatePlan(extractJson(text), input) : null;
 }

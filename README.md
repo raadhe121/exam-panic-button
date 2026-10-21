@@ -9,3 +9,9 @@ npm run dev
 ```
 
 Without an API key the app uses its built-in rule-based planner, so it always works. See `scope.md`, `prd.md`, `spec.md`.
+
+## Optional services
+Copy `.env.example` to `.env.local` and fill in what you want:
+- `ANTHROPIC_API_KEY`: AI plans, flashcards and quizzes
+- Supabase keys (run `supabase/schema.sql` first): accounts, saved exams, notes, flashcards, quizzes
+- VAPID keys, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`: push reminders

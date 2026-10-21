@@ -31,6 +31,9 @@ export interface AppState {
   timing: TimingInputs;
   topics: Topic[];
   plan: StoredPlan | null;
+  /** Set when this exam is saved to the user's account. */
+  examId?: string | null;
+  examName?: string;
 }
 
 export function loadState(): AppState | null {
