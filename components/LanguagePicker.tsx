@@ -1,6 +1,7 @@
 "use client";
 
-import { LANGS, parseLang, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
+import { LANGS, parseLang } from "@/lib/i18n";
 import { saveSettings, useSettings } from "@/lib/settings";
 
 /** Compact language switch for the header: English, Hindi, Hinglish. */

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n-client";
 import { initInstallPrompt } from "@/lib/pwa";
 
 /** Registers the service worker (production only) and shows a calm banner when the connection drops. */
 export default function PwaSetup() {
+  const t = useT();
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function PwaSetup() {
   if (!offline) return null;
   return (
     <p role="status" className="no-print fixed bottom-4 left-1/2 z-40 w-[min(92vw,26rem)] -translate-x-1/2 rounded-2xl border border-line bg-surface px-4 py-3 text-center shadow-lg">
-      You&apos;re offline. Your plan still works.
+      {t("You're offline. Your plan still works.")}
     </p>
   );
 }

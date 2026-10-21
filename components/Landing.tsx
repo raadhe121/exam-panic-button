@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 
 const STEPS = [
   { icon: "⏰", title: "Tell us your times", text: "When your exam is, when you can start, and when you want to sleep." },

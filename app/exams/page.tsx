@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { deleteExam, listExams, type ExamRow } from "@/lib/exams";
 import { saveState } from "@/lib/storage";
 

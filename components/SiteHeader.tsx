@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { useAuth } from "./AuthProvider";
 import LanguagePicker from "./LanguagePicker";
 import ThemeToggle from "./ThemeToggle";

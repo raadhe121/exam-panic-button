@@ -1,7 +1,5 @@
-import { useCallback } from "react";
 import { hi } from "./i18n/hi";
 import { hinglish } from "./i18n/hinglish";
-import { useSettings } from "./settings";
 
 export type Lang = "en" | "hi" | "hinglish";
 
@@ -29,17 +27,6 @@ export type TFn = (text: string, vars?: Vars) => string;
 export function translate(lang: Lang, text: string, vars?: Vars): string {
   const out = DICT[lang][text] ?? text;
   return vars ? out.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : out;
-}
-
-/** React hook: the chosen language id (for date formats and the like). */
-export function useLang(): Lang {
-  return useSettings().lang;
-}
-
-/** React hook: a `t` function for the language chosen in Settings. */
-export function useT(): TFn {
-  const { lang } = useSettings();
-  return useCallback((text, vars) => translate(lang, text, vars), [lang]);
 }
 
 /** Locale for dates and weekday names. Hinglish keeps English day names. */

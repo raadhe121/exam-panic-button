@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n-client";
 import { clearHistory, loadHistory, removeHistory, type HistoryEntry } from "@/lib/history";
 
 export default function HistoryPage() {

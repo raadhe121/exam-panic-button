@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ExamRow } from "@/lib/exams";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "./AuthProvider";
 

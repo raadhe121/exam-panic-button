@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { remainingTopics } from "@/lib/replan";
 import { loadState, type AppState } from "@/lib/storage";
 import { compactDuration } from "@/lib/time";

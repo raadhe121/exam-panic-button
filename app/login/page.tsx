@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { getSupabase } from "@/lib/supabase";
 
 export default function LoginPage() {

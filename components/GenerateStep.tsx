@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n-client";
 import type { AppState } from "@/lib/storage";
 import { checkTiming, clockOf, dayLabel, shortDate } from "@/lib/timing";
 import { durationLabel, inputToMin, toLocalMin } from "@/lib/time";

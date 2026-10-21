@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 
 function clock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000));

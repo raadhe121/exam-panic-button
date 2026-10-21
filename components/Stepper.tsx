@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 
 export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
   const t = useT();

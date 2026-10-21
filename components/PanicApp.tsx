@@ -8,7 +8,7 @@ import { checkTiming, defaultTiming } from "@/lib/timing";
 import { fromLocalMin, inputToMin, resolveBlocks, roundUp5, toLocalMin } from "@/lib/time";
 import { upsertHistory } from "@/lib/history";
 import { syncShare } from "@/lib/buddy";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n-client";
 import { remainingTopics } from "@/lib/replan";
 import { addRevisit } from "@/lib/revisit";
 import type { PlanInput, PlanResponse, PlanResult } from "@/lib/types";

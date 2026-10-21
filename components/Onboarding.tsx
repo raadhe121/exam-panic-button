@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 
 const CARDS = [
   { icon: "🌙", title: "Panicking? Start here.", text: "Tell us when your exam is and what you still don't know. That's all we need." },

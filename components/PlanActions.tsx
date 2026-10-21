@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createShare, stopShare } from "@/lib/buddy";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { sharePlanImage } from "@/lib/shareImage";
 import { saveExam, scheduleReminders } from "@/lib/exams";
 import { downloadIcs } from "@/lib/ics";
@@ -58,7 +58,7 @@ export default function PlanActions({
         className="btn w-full"
         disabled={busy}
         onClick={() =>
-          run(async () => ((await sharePlanImage(plan, state.examName || "")) === "shared" ? t("Shared.") : t("Saved a picture of your plan to your device.")))
+          run(async () => ((await sharePlanImage(plan, state.examName || "", t)) === "shared" ? t("Shared.") : t("Saved a picture of your plan to your device.")))
         }
       >
         {t("Share plan (picture)")}

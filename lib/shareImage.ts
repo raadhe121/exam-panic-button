@@ -1,4 +1,7 @@
+import type { TFn } from "./i18n";
 import type { StoredPlan } from "./storage";
+
+const identity: TFn = (text, vars) => (vars ? text.replace(/\{(\w+)\}/g, (m, k: string) => String(vars[k] ?? m)) : text);
 
 const COLORS = { study: "#5eead4", break: "#6b7686", revision: "#fdba74", sleep: "#a5b4fc" } as const;
 
@@ -13,14 +16,14 @@ function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h
 }
 
 /** Draws a shareable 1080 x 1350 picture of the plan and returns it as a PNG blob. */
-export async function renderPlanImage(plan: StoredPlan, name: string): Promise<Blob> {
+export async function renderPlanImage(plan: StoredPlan, name: string, t: TFn = identity): Promise<Blob> {
   const W = 1080;
   const H = 1350;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
-  const font = (px: number, weight = 500) => `${weight} ${px}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  const font = (px: number, weight = 500) => `${weight} ${px}px system-ui, -apple-system, "Segoe UI", "Noto Sans Devanagari", sans-serif`;
 
   const bg = ctx.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, "#0b0e13");
@@ -38,14 +41,14 @@ export async function renderPlanImage(plan: StoredPlan, name: string): Promise<B
   const pad = 72;
   ctx.fillStyle = "#5eead4";
   ctx.font = font(28, 700);
-  ctx.fillText("EXAM PANIC BUTTON", pad, 110);
+  ctx.fillText(t("EXAM PANIC BUTTON"), pad, 110);
   ctx.fillStyle = "#eef2f7";
   ctx.font = font(76, 800);
-  ctx.fillText("Tonight's plan", pad, 205);
+  ctx.fillText(t("Tonight's plan"), pad, 205);
   ctx.fillStyle = "#9ba7b8";
   ctx.font = font(34);
   const exam = plan.examMs ? new Date(plan.examMs).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }) : "";
-  ctx.fillText(`${name || "My exam"}${exam ? `  ·  Exam ${exam}` : ""}`.slice(0, 60), pad, 258);
+  ctx.fillText(`${name || t("My exam")}${exam ? `  ·  ${t("Exam {date}", { date: exam })}` : ""}`.slice(0, 60), pad, 258);
 
   // Rows
   const rows = plan.blocks.filter((b) => b.type !== "break" || b.endMs - b.startMs >= 20 * 60000);
@@ -56,7 +59,7 @@ export async function renderPlanImage(plan: StoredPlan, name: string): Promise<B
   for (const b of shown) {
     const mins = Math.round((b.endMs - b.startMs) / 60000);
     const label =
-      b.type === "sleep" ? `Sleep until ${b.end}` : b.type === "break" ? "Break" : (b.topic ?? "Study").replace(/ \((?!revisit)[^)]*\)$/, "");
+      b.type === "sleep" ? t("Sleep until {time}", { time: b.end }) : b.type === "break" ? t("Break") : t((b.topic ?? "Study").replace(/ \((?!revisit)[^)]*\)$/, ""));
     ctx.fillStyle = "rgba(255,255,255,0.05)";
     round(ctx, pad, y, W - 2 * pad, rowH - 12, 22);
     ctx.fill();
@@ -81,28 +84,28 @@ export async function renderPlanImage(plan: StoredPlan, name: string): Promise<B
   if (rows.length > max) {
     ctx.fillStyle = "#9ba7b8";
     ctx.font = font(28);
-    ctx.fillText(`+ ${rows.length - max} more blocks`, pad + 6, y + 30);
+    ctx.fillText(t("+ {n} more blocks", { n: rows.length - max }), pad + 6, y + 30);
   }
 
   // Footer
   const study = Math.round(plan.summary.studyMinutes / 60 * 10) / 10;
   ctx.fillStyle = "#eef2f7";
   ctx.font = font(36, 700);
-  ctx.fillText(`${study}h study  ·  ${plan.summary.topicsCovered} topics  ·  sleep protected`, pad, H - 120);
+  ctx.fillText(t("{h}h study · {n} topics · sleep protected", { h: study, n: plan.summary.topicsCovered }), pad, H - 120);
   ctx.fillStyle = "#9ba7b8";
   ctx.font = font(28);
-  ctx.fillText("You've got this.", pad, H - 70);
+  ctx.fillText(t("You've got this."), pad, H - 70);
 
   return await new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("render failed"))), "image/png"));
 }
 
 /** Opens the phone's share sheet with the picture, or downloads it where sharing files isn't supported. */
-export async function sharePlanImage(plan: StoredPlan, name: string): Promise<"shared" | "downloaded"> {
-  const blob = await renderPlanImage(plan, name);
+export async function sharePlanImage(plan: StoredPlan, name: string, t: TFn = identity): Promise<"shared" | "downloaded"> {
+  const blob = await renderPlanImage(plan, name, t);
   const file = new File([blob], "my-exam-plan.png", { type: "image/png" });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "My exam plan", text: "My plan for tonight, made with Exam Panic Button." });
+      await navigator.share({ files: [file], title: t("My exam plan"), text: t("My plan for tonight, made with Exam Panic Button.") });
       return "shared";
     } catch (e) {
       if ((e as DOMException).name === "AbortError") return "shared";

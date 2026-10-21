@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LANGS, parseLang, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
+import { LANGS, parseLang } from "@/lib/i18n";
 import { askNotificationPermission, chime, notificationsSupported, unlockAudio } from "@/lib/alerts";
 import { isIos, isStandalone, promptInstall, useCanInstall } from "@/lib/pwa";
 import { saveSettings, useSettings } from "@/lib/settings";

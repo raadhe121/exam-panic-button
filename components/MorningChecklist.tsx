@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { durationLabel } from "@/lib/time";
 import type { StoredPlan } from "@/lib/storage";
 

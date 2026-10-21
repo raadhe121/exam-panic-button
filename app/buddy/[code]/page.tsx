@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { fetchShared, type SharedPlan } from "@/lib/buddy";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { supabaseConfigured } from "@/lib/supabase";
 import { compactDuration } from "@/lib/time";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n-client";
 import type { TimingInputs } from "@/lib/storage";
 import { checkTiming, dayLabel, defaultSleep, nextClock, weekday } from "@/lib/timing";
 import { durationLabel, inputToMin, minToInput, toLocalMin } from "@/lib/time";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 
 const TOTAL = 60;
 const PHASE = 4;

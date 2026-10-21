@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { MAX_TOPICS, RATING_LABEL, type Rating, type Topic } from "@/lib/types";
 import Stepper from "./Stepper";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n-client";
 
 interface Q {
   question: string;

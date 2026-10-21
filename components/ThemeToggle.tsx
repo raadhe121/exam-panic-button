@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n-client";
 
 export default function ThemeToggle() {
+  const t = useT();
   const [theme, setTheme] = useState<"dark" | "light">(() =>
     typeof document !== "undefined" && document.documentElement.dataset.theme === "light" ? "light" : "dark",
   );
@@ -11,7 +13,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:text-ink"
-      aria-label={`Switch to ${next} mode`}
+      aria-label={t(next === "light" ? "Switch to light mode" : "Switch to dark mode")}
       onClick={() => {
         document.documentElement.dataset.theme = next;
         try {

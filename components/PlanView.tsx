@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
 import { announceBlock, askNotificationPermission, notificationsSupported, unlockAudio } from "@/lib/alerts";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n-client";
 import { saveSettings, useSettings } from "@/lib/settings";
 import { compactDuration, durationLabel } from "@/lib/time";
 import Link from "next/link";
