@@ -73,7 +73,7 @@ export default function TopicsStep({
   return (
     <section>
       <Stepper step={2} />
-      <h1 className="mb-1 text-3xl font-bold">What do you need to cover?</h1>
+      <h1 className="mb-1 text-3xl font-bold"><span aria-hidden="true">📚 </span>What do you need to cover?</h1>
       <p className="mb-6 text-muted">Add each topic and be honest about how well you know it. Up to {MAX_TOPICS}.</p>
 
       <details className="card mb-4">
@@ -145,7 +145,7 @@ export default function TopicsStep({
               <fieldset className="flex flex-wrap gap-2">
                 <legend className="sr-only">How well do you know {t.name}?</legend>
                 {RATINGS.map((r) => (
-                  <label key={r} className="seg">
+                  <label key={r} className={`seg seg-${r}`}>
                     <input
                       type="radio"
                       className="sr-only"
