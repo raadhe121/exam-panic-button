@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { buildLocalPlan } from "@/lib/planner";
 import { clearState, loadState, saveState, type AppState, type Stage, type StoredPlan } from "@/lib/storage";
@@ -38,6 +39,9 @@ export default function PanicApp() {
   const [state, setState] = useState<AppState | null>(null);
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState("");
+  const router = useRouter();
+  const params = useSearchParams();
+  const intent = params.get("new") ? "new" : params.get("open") ? "open" : null;
   const [replanning, setReplanning] = useState(false);
   const [replanMsg, setReplanMsg] = useState("");
 
@@ -47,9 +51,23 @@ export default function PanicApp() {
     setState(saved ?? { stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null });
   }, []);
 
+  // "My exams" navigates here with ?new=1 or ?open=1. Next can keep this page's old state alive,
+  // so react to the intent explicitly instead of relying on a fresh mount.
   useEffect(() => {
-    if (state) saveState(state);
-  }, [state]);
+    if (!intent) return;
+    if (intent === "new") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to a blank exam
+      setState({ stage: "timing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null, examId: null });
+    } else {
+      const saved = loadState();
+      if (saved) setState(saved);
+    }
+    router.replace("/");
+  }, [intent, router]);
+
+  useEffect(() => {
+    if (state && !intent) saveState(state);
+  }, [state, intent]);
 
   const patch = useCallback((p: Partial<AppState>) => setState((s) => (s ? { ...s, ...p } : s)), []);
   const go = useCallback((stage: Stage) => patch({ stage }), [patch]);

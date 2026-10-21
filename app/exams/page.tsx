@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { deleteExam, listExams, type ExamRow } from "@/lib/exams";
-import { clearState, saveState } from "@/lib/storage";
-import { defaultTiming } from "@/lib/timing";
-import { toLocalMin } from "@/lib/time";
+import { saveState } from "@/lib/storage";
 
 export default function ExamsPage() {
   const { user, ready, configured } = useAuth();
@@ -26,13 +24,11 @@ export default function ExamsPage() {
 
   const open = (e: ExamRow) => {
     saveState({ stage: e.plan ? "plan" : "topics", timing: e.timing, topics: e.topics, plan: e.plan, examId: e.id, examName: e.name });
-    router.push("/");
+    router.push("/?open=1");
   };
 
   const newExam = () => {
-    clearState();
-    saveState({ stage: "timing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null, examId: null });
-    router.push("/");
+    router.push("/?new=1");
   };
 
   const remove = async (e: ExamRow) => {
