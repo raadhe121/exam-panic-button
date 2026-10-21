@@ -21,6 +21,7 @@
   --dot-rev: #fdba74;
   --dot-sleep: #a5b4fc;
   --sleep-ink: #b4bffd;
+  --bg-image: url("/bg-night.svg");
   color-scheme: dark;
 }
 
@@ -44,6 +45,7 @@
   --dot-rev: #c2410c;
   --dot-sleep: #4f46e5;
   --sleep-ink: #4338ca;
+  --bg-image: url("/bg-day.svg");
   color-scheme: light;
 }
 
@@ -83,7 +85,7 @@ html {
 }
 
 body {
-  background: var(--bg);
+  background: var(--bg) var(--bg-image) center / cover no-repeat fixed;
   color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   font-size: 1rem;
@@ -175,6 +177,9 @@ body {
 }
 
 @media print {
+  body {
+    background: #fff !important;
+  }
   .no-print {
     display: none !important;
   }
