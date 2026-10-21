@@ -14,7 +14,7 @@ interface Question {
   explanation: string;
 }
 
-export default function QuizTab({ exam }: { exam: ExamRow }) {
+export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n: number) => void }) {
   const { user } = useAuth();
   const sb = getSupabase()!;
   const [qs, setQs] = useState<Question[] | null>(null);
@@ -31,6 +31,10 @@ export default function QuizTab({ exam }: { exam: ExamRow }) {
       else setQs(data as Question[]);
     });
   }, [sb, exam.id]);
+
+  useEffect(() => {
+    if (qs) onCount?.(qs.length);
+  }, [qs, onCount]);
 
   const generate = async () => {
     setBusy(true);

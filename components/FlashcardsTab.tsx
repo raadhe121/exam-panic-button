@@ -13,7 +13,7 @@ interface Card {
   known: boolean;
 }
 
-export default function FlashcardsTab({ exam }: { exam: ExamRow }) {
+export default function FlashcardsTab({ exam, onCount }: { exam: ExamRow; onCount?: (n: number) => void }) {
   const { user } = useAuth();
   const sb = getSupabase()!;
   const [cards, setCards] = useState<Card[] | null>(null);
@@ -30,6 +30,38 @@ export default function FlashcardsTab({ exam }: { exam: ExamRow }) {
       else setCards(data as Card[]);
     });
   }, [sb, exam.id]);
+
+  useEffect(() => {
+    if (cards) onCount?.(cards.length);
+  }, [cards, onCount]);
+
+  const fromNotes = async () => {
+    setBusy(true);
+    setErr("");
+    const { data: notes, error: e1 } = await sb.from("notes").select("topic,body").eq("exam_id", exam.id);
+    if (e1) {
+      setBusy(false);
+      return setErr("Couldn't read your notes.");
+    }
+    const have = new Set((cards ?? []).map((c) => c.back));
+    const rows = (notes ?? [])
+      .filter((n) => !have.has(n.body))
+      .map((n) => ({
+        user_id: user!.id,
+        exam_id: exam.id,
+        topic: n.topic,
+        front: n.topic ? `${n.topic}: what should you remember?` : "What should you remember?",
+        back: n.body,
+      }));
+    if (!rows.length) {
+      setBusy(false);
+      return setErr(notes?.length ? "All your notes are already flashcards." : "Add a note first, then turn it into a flashcard.");
+    }
+    const { data, error } = await sb.from("flashcards").insert(rows).select("id,topic,front,back,known");
+    if (error) setErr("Couldn't make flashcards from your notes.");
+    else setCards((c) => [...(c ?? []), ...(data as Card[])]);
+    setBusy(false);
+  };
 
   const generate = async () => {
     setBusy(true);
@@ -122,11 +154,14 @@ export default function FlashcardsTab({ exam }: { exam: ExamRow }) {
         </div>
       )}
 
-      {cards && cards.length > 0 && (
-        <button type="button" className="btn self-start" onClick={generate} disabled={busy}>
-          {busy ? "Making flashcards..." : "Add more with AI"}
-        </button>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {cards && cards.length > 0 && (
+          <button type="button" className="btn" onClick={generate} disabled={busy}>
+            {busy ? "Making flashcards..." : "Add more with AI"}
+          </button>
+        )}
+        <button type="button" className="btn" onClick={fromNotes} disabled={busy}>Turn my notes into flashcards</button>
+      </div>
 
       <form className="card flex flex-col gap-3" onSubmit={add}>
         <h2 className="text-lg font-bold">Add your own card</h2>
