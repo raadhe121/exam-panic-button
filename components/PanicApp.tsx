@@ -245,6 +245,7 @@ export default function PanicApp() {
             onQuickCheck={quickCheckResult}
             replanning={replanning}
             replanMsg={replanMsg}
+            stress={state.timing.stress}
             onToggleMorning={(i) =>
               setState((s) =>
                 s && s.plan ? { ...s, plan: { ...s.plan, morningDone: { ...s.plan.morningDone, [i]: !s.plan.morningDone?.[i] } } } : s,

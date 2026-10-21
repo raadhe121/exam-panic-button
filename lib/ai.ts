@@ -1,5 +1,5 @@
 import { fmt, roundDown5, roundUp5 } from "./time";
-import { extractJson, validatePlan } from "./validate";
+import { extractJson, repairPlan, validatePlan } from "./validate";
 import { isGentle, napMode } from "./planner";
 import { RATING_LABEL, type PlanInput, type PlanResult } from "./types";
 
@@ -32,14 +32,14 @@ ${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute
 ${topics}`;
 }
 
-async function viaGroq(key: string, system: string, user: string, maxTokens: number): Promise<string | null> {
+async function viaGroq(key: string, system: string, user: string, maxTokens: number, retried = false): Promise<string | null> {
   const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model,
-      max_tokens: maxTokens + 1500, // reasoning models spend part of the budget thinking
+      max_tokens: maxTokens + 800, // reasoning models spend part of the budget thinking
       temperature: 0.4,
       ...(model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
       response_format: { type: "json_object" },
@@ -50,6 +50,12 @@ async function viaGroq(key: string, system: string, user: string, maxTokens: num
     }),
     signal: AbortSignal.timeout(25000),
   });
+  if (res.status === 429 && !retried) {
+    // Groq limits tokens per minute; a short wait is usually enough for the window to clear.
+    const wait = Math.min(Number(res.headers.get("retry-after")) || 5, 12);
+    await new Promise((r) => setTimeout(r, wait * 1000 + 300));
+    return viaGroq(key, system, user, maxTokens, true);
+  }
   if (!res.ok) return null;
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return data.choices?.[0]?.message?.content ?? null;
@@ -87,7 +93,65 @@ export async function askAI(system: string, user: string, maxTokens = 4000): Pro
   return null;
 }
 
+/** Reads text from a photo (data URL). Groq's qwen vision model by default, Claude when only an Anthropic key is set. */
+export async function askVision(system: string, user: string, dataUrl: string, maxTokens = 1500): Promise<string | null> {
+  try {
+    if (process.env.GROQ_API_KEY) {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+        body: JSON.stringify({
+          model: process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b",
+          max_tokens: maxTokens,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: [{ type: "text", text: user }, { type: "image_url", image_url: { url: dataUrl } }] },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      return data.choices?.[0]?.message?.content ?? null;
+    }
+    if (process.env.ANTHROPIC_API_KEY) {
+      const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(dataUrl);
+      if (!m) return null;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
+          max_tokens: maxTokens,
+          system,
+          messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } }, { type: "text", text: user }] }],
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+      return data.content?.find((c) => c.type === "text")?.text ?? null;
+    }
+  } catch {
+    /* network error or timeout */
+  }
+  return null;
+}
+
+const RETRY_HINT =
+  "\n\nYour previous reply was rejected. Fix it: every start and end must end in 0 or 5 minutes, blocks must be back to back with no gaps, " +
+  "each topic gets one study block (a second pass only for the hardest topics), use only one final revision block right before sleep, " +
+  "and fill spare time with one longer free-time break instead of many tiny blocks.";
+
 export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
-  const text = await askAI(SYSTEM, buildPrompt(input));
-  return text ? validatePlan(extractJson(text), input) : null;
+  const prompt = buildPrompt(input);
+  for (const extra of ["", RETRY_HINT]) {
+    const text = await askAI(SYSTEM, prompt + extra, 2600);
+    if (!text) return null;
+    const json = extractJson(text);
+    const plan = validatePlan(json, input) ?? validatePlan(repairPlan(json, input), input);
+    if (plan) return plan;
+  }
+  return null;
 }

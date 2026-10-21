@@ -41,7 +41,11 @@ Labelled inputs, radio groups for ratings with text labels, `aria-current` on th
 ## Extras
 - Breathing: `BreathingDialog` (native dialog, 60 s, 4 s in / 4 s out, then scrolls back to the Now block).
 - Re-plan: `lib/replan.ts` finds topics whose first block isn't ticked; the plan is rebuilt from now to the original sleep time with the original sleep/nap mode (`PlanInput.nap`). Sleep stays protected and lower-priority topics are dropped first.
-- Syllabus: `POST /api/topics` asks Claude for a topic list, falling back to `lib/syllabus.ts` line splitting. No login needed.
+- Syllabus: `POST /api/topics` asks the AI for a topic list and flags up to 3 likely-important topics (starred on import), falling back to `lib/syllabus.ts` line splitting. No login needed.
+- Photo: `POST /api/scan` sends a downscaled JPEG to a vision model (`GROQ_VISION_MODEL`, default `qwen/qwen3.8-27b`; Claude if only an Anthropic key is set) and returns the same topic list. No fallback: the UI asks the student to type instead.
+- Explain it fast: `POST /api/explain` returns 5 bullets and a memory trick for one topic.
+- Calm coach: `lib/coach.ts` picks a short line from progress and the panic score. No AI call, so it works offline.
+- Plan generation repairs sloppy model times (`repairPlan` in `lib/validate.ts`) before validating, retries once, and retries Groq once on a 429.
 - Morning-of: `MorningChecklist` appears automatically after the sleep block ends (and on demand from a button).
 
 ## Adaptive and social features

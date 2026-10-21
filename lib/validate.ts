@@ -1,5 +1,5 @@
 import { finalize, isGentle } from "./planner";
-import { resolveBlocks, roundDown5, roundUp5 } from "./time";
+import { fmt, parseHHMM, resolveBlocks, roundDown5, roundUp5 } from "./time";
 import type { BlockType, PlanBlock, PlanInput, PlanResult } from "./types";
 
 const TYPES: BlockType[] = ["study", "break", "revision", "sleep"];
@@ -122,4 +122,72 @@ export function extractJson(text: string): unknown {
       return null;
     }
   }
+}
+
+
+/**
+ * Models are decent at the order of a plan but sloppy at clock arithmetic (27-minute blocks, small gaps).
+ * This snaps block lengths to 5 minutes, re-chains them from the start time and makes the study time exactly
+ * fill the window before sleep. It never invents topics, so validatePlan still has the final say.
+ */
+export function repairPlan(raw: unknown, input: PlanInput): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  if (!Array.isArray(r.blocks)) return raw;
+  const all = r.blocks.filter((b): b is Record<string, unknown> => !!b && typeof b === "object");
+  const body = all.filter((b) => b.type !== "sleep");
+  const sleepBlock = all.find((b) => b.type === "sleep");
+  if (!sleepBlock || all.filter((b) => b.type === "sleep").length !== 1 || !body.length) return raw;
+
+  const start = roundUp5(input.startMin);
+  const sleep = roundDown5(input.sleepMin);
+  const lens: number[] = [];
+  for (const b of body) {
+    const s = typeof b.start === "string" ? parseHHMM(b.start) : null;
+    const e = typeof b.end === "string" ? parseHHMM(b.end) : null;
+    if (s === null || e === null) return raw;
+    lens.push(Math.max(5, Math.round((((e - s) % 1440) + 1440) % 1440 / 5) * 5));
+  }
+
+  let spare = sleep - start - lens.reduce((a, b) => a + b, 0);
+  const out: (Record<string, unknown> & { len: number })[] = body.map((b, i) => ({ ...b, len: lens[i] }));
+  if (spare > 0) {
+    // Leftover time becomes one free-time break just before the final revision.
+    const at = out.length - 1 >= 0 && out[out.length - 1].type === "revision" ? out.length - 1 : out.length;
+    out.splice(at, 0, { type: "break", topic: null, tip: "Free time: water, a snack, a short walk.", len: spare });
+  } else if (spare < 0) {
+    for (const b of out) {
+      if (b.type !== "break" || spare === 0) continue;
+      const cut = Math.min(-spare, b.len - 5);
+      if (cut > 0) { b.len -= cut; spare += cut; }
+    }
+    if (spare < 0) return raw;
+  }
+
+  if (!isGentle(input.stress)) {
+    // Hardest topics first: re-sort the study blocks by rating, keeping breaks and revision where they are.
+    const rank = (topic: unknown) => {
+      const lower = typeof topic === "string" ? topic.toLowerCase() : "";
+      const t = input.topics.find((x) => lower === x.name.toLowerCase() || lower.startsWith(`${x.name.toLowerCase()} (`));
+      return !t ? 3 : t.rating === "noidea" || t.starred ? 0 : t.rating === "shaky" ? 1 : 2;
+    };
+    const study = out.filter((b) => b.type === "study");
+    const sorted = study
+      .map((b, i) => ({ b, i }))
+      .sort((x, y) => rank(x.b.topic) - rank(y.b.topic) || x.i - y.i)
+      .map((x) => x.b);
+    let k = 0;
+    for (let i = 0; i < out.length; i++) if (out[i].type === "study") out[i] = sorted[k++];
+  }
+
+  let cursor = start;
+  const blocks = out.map((b) => {
+    const { len, ...rest } = b;
+    const block = { ...rest, start: fmt(cursor), end: fmt(cursor + len) };
+    cursor += len;
+    return block;
+  });
+  const sleepEnd = typeof sleepBlock.end === "string" ? parseHHMM(sleepBlock.end) : null;
+  if (sleepEnd === null) return raw;
+  return { ...r, blocks: [...blocks, { ...sleepBlock, start: fmt(sleep), end: fmt(roundDown5(sleepEnd)) }] };
 }

@@ -10,6 +10,17 @@ const COLOR: Record<Rating, string> = { know: "text-good", shaky: "text-warn", n
 /** Friendlier wording for the quick-add chips; the plan itself still uses Know it / Shaky / No idea. */
 const FRIENDLY: Record<Rating, string> = { noidea: "Not at all", shaky: "A bit", know: "Pretty well" };
 
+/** Scales a photo down to a JPEG that fits comfortably in one request (phone photos can be 10 MB+). */
+async function shrinkImage(file: File): Promise<string> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.8);
+}
+
 export default function TopicsStep({
   topics,
   onChange,
@@ -30,6 +41,26 @@ export default function TopicsStep({
   const [syllabus, setSyllabus] = useState("");
   const [parsing, setParsing] = useState(false);
   const [syllabusMsg, setSyllabusMsg] = useState("");
+  const [scanning, setScanning] = useState(false);
+
+  /** Adds topics from a syllabus or photo. Topics the AI thinks matter most come in starred. */
+  const addImported = (list: { name: string; subject?: string; important?: boolean }[]) => {
+    const have = new Set(topics.map((t) => t.name.toLowerCase()));
+    const fresh = list.filter((t) => !have.has(t.name.toLowerCase()));
+    const room = MAX_TOPICS - topics.length;
+    const added = fresh.slice(0, room);
+    onChange([
+      ...topics,
+      ...added.map((t) => ({ id: crypto.randomUUID(), name: t.name, subject: t.subject ?? "", rating: "shaky" as Rating, starred: !!t.important })),
+    ]);
+    const starred = added.filter((t) => t.important).length;
+    setSyllabusMsg(
+      `Added ${added.length} topic${added.length === 1 ? "" : "s"}.` +
+        (starred ? ` We starred ${starred} that usually matter most.` : "") +
+        " Now rate each one below." +
+        (fresh.length > room ? ` We stopped at ${MAX_TOPICS}.` : ""),
+    );
+  };
 
   const importSyllabus = async () => {
     setParsing(true);
@@ -42,23 +73,31 @@ export default function TopicsStep({
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      const have = new Set(topics.map((t) => t.name.toLowerCase()));
-      const fresh = (j.topics as { name: string; subject?: string }[]).filter((t) => !have.has(t.name.toLowerCase()));
-      const room = MAX_TOPICS - topics.length;
-      const added = fresh.slice(0, room);
-      onChange([
-        ...topics,
-        ...added.map((t) => ({ id: crypto.randomUUID(), name: t.name, subject: t.subject ?? "", rating: "shaky" as Rating, starred: false })),
-      ]);
+      addImported(j.topics);
       setSyllabus("");
-      setSyllabusMsg(
-        `Added ${added.length} topic${added.length === 1 ? "" : "s"}. Now rate each one below.` +
-          (fresh.length > room ? ` We stopped at ${MAX_TOPICS}.` : ""),
-      );
     } catch (e) {
       setSyllabusMsg(e instanceof Error && e.message ? e.message : "Couldn't read that. Please try again or add topics by hand.");
     }
     setParsing(false);
+  };
+
+  const importPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setScanning(true);
+    setSyllabusMsg("");
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image: await shrinkImage(file) }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      addImported(j.topics);
+    } catch (e) {
+      setSyllabusMsg(e instanceof Error && e.message ? e.message : "Couldn't read that photo. Try a clearer one or type the topics.");
+    }
+    setScanning(false);
   };
 
   const add = () => {
@@ -137,6 +176,20 @@ export default function TopicsStep({
           <button type="button" className="min-h-11 font-semibold text-accent underline" onClick={() => setShowSyllabus((v) => !v)} aria-expanded={showSyllabus}>
             Paste syllabus
           </button>
+          <label className={`inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline ${scanning ? "opacity-60" : ""}`}>
+            {scanning ? "Reading photo..." : "Snap a photo"}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={scanning}
+              onChange={(e) => {
+                importPhoto(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
           <span className="text-muted">{topics.length} of {MAX_TOPICS}</span>
         </div>
       </div>
@@ -157,7 +210,7 @@ export default function TopicsStep({
       {topics.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line px-5 py-10 text-center text-muted">
           <p className="mb-1 text-lg font-semibold text-ink">Add your first topic</p>
-          Nothing yet. Add one above, or{" "}
+          Nothing yet. Add one above, snap a photo of your notes, or{" "}
           <button type="button" className="font-semibold text-accent underline" onClick={() => setShowSyllabus(true)}>paste your syllabus</button>.
         </div>
       ) : (

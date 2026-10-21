@@ -8,7 +8,9 @@ import { compactDuration, durationLabel } from "@/lib/time";
 import Link from "next/link";
 import BreathingDialog from "./BreathingDialog";
 import FocusOverlay from "./FocusOverlay";
+import ExplainDialog from "./ExplainDialog";
 import QuickCheckDialog from "./QuickCheckDialog";
+import { coachLine } from "@/lib/coach";
 import MorningChecklist from "./MorningChecklist";
 
 const DOT: Record<StoredBlock["type"], string> = {
@@ -72,6 +74,7 @@ export default function PlanView({
   onToggleMorning,
   replanning,
   replanMsg,
+  stress = 3,
   extra,
 }: {
   plan: StoredPlan;
@@ -84,12 +87,14 @@ export default function PlanView({
   onToggleMorning: (i: number) => void;
   replanning: boolean;
   replanMsg: string;
+  stress?: number;
   extra?: React.ReactNode;
 }) {
   const [now, setNow] = useState<number | null>(null);
   const [breathing, setBreathing] = useState(false);
   const [focus, setFocus] = useState(false);
   const [check, setCheck] = useState<{ topic: string; subject: string } | null>(null);
+  const [explain, setExplain] = useState<{ topic: string; subject: string } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const settings = useSettings();
   const lastIdx = useRef<number | null>(null);
@@ -147,6 +152,22 @@ export default function PlanView({
   const upcoming = rows.filter((r) => r.i !== nowIdx && !earlier.includes(r));
   const behind = earlier.filter((r) => r.b.type === "study" && !plan.done[r.i]).length;
 
+  const openExplain = (t: string | null) => {
+    const { name, subject } = splitTopic(t);
+    setExplain({ topic: name, subject: subject === "revisit" ? "" : subject });
+  };
+  const isStudy = (r: Row) => r.b.type === "study" && splitTopic(r.b.topic).subject !== "revisit";
+  const studyRows = rows.filter(isStudy);
+  const coach = nowRow
+    ? coachLine({
+        studyDone: studyRows.filter((r) => plan.done[r.i]).length,
+        studyTotal: studyRows.length,
+        behind,
+        stress,
+        blockType: nowRow.b.type,
+      })
+    : "";
+
   const closeBreathing = () => {
     setBreathing(false);
     setTimeout(() => document.getElementById("now-block")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
@@ -174,6 +195,11 @@ export default function PlanView({
             <span className="ml-2 text-sm font-normal text-muted">{durationLabel(r.mins)}</span>
           </p>
           <p className="text-muted">{r.b.tip}</p>
+          {r.b.type === "study" && !done && (
+            <button type="button" className="no-print min-h-11 text-sm font-semibold text-accent underline" onClick={() => openExplain(r.b.topic)}>
+              Explain it fast
+            </button>
+          )}
         </div>
         {isSleep ? (
           <span aria-hidden="true" className="w-6" />
@@ -252,6 +278,7 @@ export default function PlanView({
       {focus && nowRow && now !== null && (
         <FocusOverlay topic={nowRow.title} initialMs={Math.max(1000, nowRow.b.endMs - now)} onClose={() => setFocus(false)} />
       )}
+      {explain && <ExplainDialog topic={explain.topic} subject={explain.subject} onClose={() => setExplain(null)} />}
       {check && (
         <QuickCheckDialog
           topic={check.topic}
@@ -282,6 +309,7 @@ export default function PlanView({
                 </div>
               </div>
               <p className="mt-3 text-lg text-muted">{nowRow.b.tip}</p>
+              {coach && <p className="mt-2 font-semibold text-accent">{coach}</p>}
               <div
                 role="progressbar"
                 aria-label="Time used in this block"
@@ -308,6 +336,9 @@ export default function PlanView({
                 )}
                 {nowRow.b.type === "study" && (
                   <button type="button" className="btn" onClick={() => setFocus(true)}>Focus mode</button>
+                )}
+                {nowRow.b.type === "study" && (
+                  <button type="button" className="btn" onClick={() => openExplain(nowRow.b.topic)}>Explain it fast</button>
                 )}
                 <button type="button" className="btn" onClick={() => setBreathing(true)}>Breathe for a minute</button>
               </div>
