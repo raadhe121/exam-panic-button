@@ -12,6 +12,6 @@ Without an API key the app uses its built-in rule-based planner, so it always wo
 
 ## Optional services
 Copy `.env.example` to `.env.local` and fill in what you want:
-- `ANTHROPIC_API_KEY`: AI plans, flashcards and quizzes
+- `GROQ_API_KEY` (or `ANTHROPIC_API_KEY`): AI plans, flashcards, quizzes and syllabus parsing. Groq wins if both are set
 - Supabase keys (run `supabase/schema.sql` first): accounts, saved exams, notes, flashcards, quizzes
 - VAPID keys, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`: push reminders

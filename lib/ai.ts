@@ -32,35 +32,60 @@ ${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute
 ${topics}`;
 }
 
-/** Calls the Anthropic Messages API from the server. Returns the reply text, or null on any failure. */
-export async function askClaude(system: string, user: string, maxTokens = 4000): Promise<string | null> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
+async function viaGroq(key: string, system: string, user: string, maxTokens: number): Promise<string | null> {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      max_tokens: maxTokens,
+      temperature: 0.4,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  return data.choices?.[0]?.message?.content ?? null;
+}
+
+async function viaAnthropic(key: string, system: string, user: string, maxTokens: number): Promise<string | null> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+  return data.content?.find((c) => c.type === "text")?.text ?? null;
+}
+
+/**
+ * Asks the configured AI model for a JSON reply, from the server only.
+ * Uses Groq when GROQ_API_KEY is set, otherwise Anthropic when ANTHROPIC_API_KEY is set.
+ * Returns the reply text, or null on any failure (callers then use their offline fallback).
+ */
+export async function askAI(system: string, user: string, maxTokens = 4000): Promise<string | null> {
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-        max_tokens: maxTokens,
-        system,
-        messages: [{ role: "user", content: user }],
-      }),
-      signal: AbortSignal.timeout(25000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { content?: { type: string; text?: string }[] };
-    return data.content?.find((c) => c.type === "text")?.text ?? null;
+    if (process.env.GROQ_API_KEY) return await viaGroq(process.env.GROQ_API_KEY, system, user, maxTokens);
+    if (process.env.ANTHROPIC_API_KEY) return await viaAnthropic(process.env.ANTHROPIC_API_KEY, system, user, maxTokens);
   } catch {
-    return null;
+    /* network error or timeout */
   }
+  return null;
 }
 
 export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
-  const text = await askClaude(SYSTEM, buildPrompt(input));
+  const text = await askAI(SYSTEM, buildPrompt(input));
   return text ? validatePlan(extractJson(text), input) : null;
 }

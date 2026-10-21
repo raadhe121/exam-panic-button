@@ -1,4 +1,4 @@
-import { askClaude } from "@/lib/ai";
+import { askAI } from "@/lib/ai";
 import { parseSyllabusLocal, type ParsedTopic } from "@/lib/syllabus";
 import { extractJson } from "@/lib/validate";
 
@@ -9,7 +9,7 @@ Reply with ONLY JSON: {"topics":[{"name":string,"subject":string}]}.
 Rules: at most 15 topics; merge tiny items and drop admin text (dates, marks, instructions); each name under 60 characters; "subject" is the course name if clear, else "".`;
 
 async function viaAI(text: string): Promise<ParsedTopic[] | null> {
-  const reply = await askClaude(SYSTEM, text, 1500);
+  const reply = await askAI(SYSTEM, text, 1500);
   const raw = (extractJson(reply ?? "") as { topics?: unknown[] } | null)?.topics;
   if (!Array.isArray(raw)) return null;
   const out: ParsedTopic[] = [];
