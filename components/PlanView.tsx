@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
+import { announceBlock, askNotificationPermission, notificationsSupported, unlockAudio } from "@/lib/alerts";
+import { saveSettings, useSettings } from "@/lib/settings";
 import { compactDuration, durationLabel } from "@/lib/time";
 import Link from "next/link";
 import BreathingDialog from "./BreathingDialog";
@@ -89,6 +91,9 @@ export default function PlanView({
   const [focus, setFocus] = useState(false);
   const [check, setCheck] = useState<{ topic: string; subject: string } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const settings = useSettings();
+  const lastIdx = useRef<number | null>(null);
+  const [askedNotif, setAskedNotif] = useState(false);
 
   useEffect(() => {
     const tick = () => setNow(Date.now());
@@ -96,6 +101,20 @@ export default function PlanView({
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Chime, buzz and notify when a new block starts (not for blocks we only catch up on late).
+  useEffect(() => {
+    if (now === null) return;
+    const idx = plan.blocks.findIndex((b) => now >= b.startMs && now < b.endMs);
+    const prev = lastIdx.current;
+    lastIdx.current = idx;
+    if (prev === null || idx === prev || idx < 0) return;
+    if (now - plan.blocks[idx].startMs < 15000) announceBlock(plan.blocks[idx]);
+  }, [now, plan.blocks]);
+
+  const planStarted = now !== null && now >= plan.blocks[0].startMs;
+  const showNotifAsk =
+    planStarted && !askedNotif && !settings.notifications && notificationsSupported() && Notification.permission === "default";
 
   const hhmm = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -172,7 +191,7 @@ export default function PlanView({
   };
 
   return (
-    <section className="anim-fade-up">
+    <section className="anim-fade-up" onPointerDown={unlockAudio}>
       {fresh && (
         <p role="status" className="plan-ready no-print fixed left-1/2 top-4 z-30 -translate-x-1/2 rounded-full border border-nowline bg-now px-5 py-2 font-bold text-accent shadow-lg">
           ✓ Plan ready
@@ -210,6 +229,25 @@ export default function PlanView({
         </p>
       )}
       <p role="status" className="mb-4 text-muted empty:hidden">{replanMsg}</p>
+      {showNotifAsk && (
+        <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
+          <p>Want a nudge when each block starts, even if this tab is in the background?</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={async () => {
+                unlockAudio();
+                setAskedNotif(true);
+                if (await askNotificationPermission()) saveSettings({ notifications: true });
+              }}
+            >
+              Turn on notifications
+            </button>
+            <button type="button" className="btn" onClick={() => setAskedNotif(true)}>Not now</button>
+          </div>
+        </div>
+      )}
       {breathing && <BreathingDialog onClose={closeBreathing} />}
       {focus && nowRow && now !== null && (
         <FocusOverlay topic={nowRow.title} initialMs={Math.max(1000, nowRow.b.endMs - now)} onClose={() => setFocus(false)} />
@@ -352,6 +390,14 @@ export default function PlanView({
             <h2 id="take-title" className="mb-4 text-lg font-bold">Take it with you</h2>
             {extra}
             <div className="no-print mt-4 flex flex-wrap gap-x-5 gap-y-2 text-accent">
+              <button
+                type="button"
+                className="min-h-11 font-semibold underline"
+                aria-pressed={settings.sound}
+                onClick={() => { unlockAudio(); saveSettings({ sound: !settings.sound }); }}
+              >
+                Sound: {settings.sound ? "on" : "off"}
+              </button>
               <Link href="/countdown" className="inline-flex min-h-11 items-center font-semibold underline">Countdown screen</Link>
               <button type="button" className="min-h-11 font-semibold underline" onClick={onEdit}>Edit topics</button>
               <button type="button" className="min-h-11 font-semibold underline" onClick={() => window.print()}>Print plan</button>

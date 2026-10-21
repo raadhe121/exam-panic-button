@@ -1,3 +1,4 @@
+import { loadSettings } from "./settings";
 import { DAY, inputToMin, minToInput, roundUp5 } from "./time";
 import { MIN_GOOD_SLEEP_MINUTES, NAP_MODE_MINUTES } from "./types";
 import type { TimingInputs } from "./storage";
@@ -10,7 +11,7 @@ export interface TimingCheck {
 }
 
 export function defaultSleep(examMin: number, startMin: number) {
-  const full = examMin - 7 * 60;
+  const full = examMin - loadSettings().sleepHours * 60;
   return examMin - startMin < NAP_MODE_MINUTES ? examMin - 40 : full;
 }
 

@@ -51,6 +51,12 @@ Labelled inputs, radio groups for ratings with text labels, `aria-current` on th
 - Countdown: `/countdown` reads the plan from localStorage, shows time to exam, sleep left and topics left, supports full screen and a screen wake lock.
 - Study buddy: table `shared_plans` plus RPC `get_shared_plan(code)` (security definer) in `supabase/schema.sql`. The owner (signed in) creates a random code; `PanicApp` pushes plan and ticks to the row on every change; `/buddy/[code]` polls every 3 seconds and shows a read-only live view. Needs the latest schema.sql to be run.
 
+## App feel (PWA, alerts, settings)
+- `app/manifest.ts` + `public/icons/*`: installable (standalone, themed splash). `/settings` shows an Install button where the browser offers `beforeinstallprompt`, and Add-to-Home-Screen steps on iOS.
+- `public/sw.js` (registered in production only by `PwaSetup`): pages are network-first with a cached fallback (home shell when offline); scripts, styles and images are stale-while-revalidate; `/api/*` is never cached. Plans live in localStorage and the local planner runs in the browser, so a made plan works with no connection. An offline banner appears when the connection drops.
+- Alerts (`lib/alerts.ts`): when a new block starts, `PlanView` plays a Web Audio chime and vibrates (each switchable), and shows a notification if enabled and the tab is hidden. Permission is requested from a button once the plan has started. Browsers pause timers in background tabs on phones, so for reliable background pings signed-in users should also use the server push reminders.
+- Settings (`lib/settings.ts`, key `epb:settings`): theme, default sleep hours (feeds the default bedtime), sound, vibration, notifications.
+
 ## Accounts and saved data (optional layer)
 - `lib/supabase.ts`: browser client, null when env vars are missing (the app then runs as a guest-only app).
 - `supabase/schema.sql`: tables `exams`, `notes`, `flashcards`, `quiz_questions`, `push_subscriptions`, `reminders`; every table has a row level security policy so users only see their own rows.
