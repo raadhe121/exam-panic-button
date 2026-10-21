@@ -24,6 +24,7 @@ export function defaultTiming(nowMin: number): TimingInputs {
     examAt: minToInput(exam),
     sleepAt: minToInput(defaultSleep(exam, start)),
     sleepTouched: false,
+    stress: 3,
   };
 }
 

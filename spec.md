@@ -44,6 +44,13 @@ Labelled inputs, radio groups for ratings with text labels, `aria-current` on th
 - Syllabus: `POST /api/topics` asks Claude for a topic list, falling back to `lib/syllabus.ts` line splitting. No login needed.
 - Morning-of: `MorningChecklist` appears automatically after the sleep block ends (and on demand from a button).
 
+## Adaptive and social features
+- Panic score: `TimingInputs.stress` (1 to 5, asked on step 1). At 4 or 5 the planner is "gentle": shorter blocks (No idea 40, Shaky 30, Know it 10), a 10-minute break after every block, long break after 80 minutes, and an easy topic first. Normal ordering rules otherwise; the validator skips the ordering check in gentle mode.
+- Focus mode: `FocusOverlay` shows only the topic and a timer. `visibilitychange` pauses it; on return it asks "Back to <topic>?".
+- Quick check: after ticking a study block, `QuickCheckDialog` calls `POST /api/quickcheck` (AI, 2 questions). A wrong answer marks a "Know it" topic as Shaky and `lib/revisit.ts` carves a 10-minute revisit out of the next break of 20+ minutes (done-flags are shifted).
+- Countdown: `/countdown` reads the plan from localStorage, shows time to exam, sleep left and topics left, supports full screen and a screen wake lock.
+- Study buddy: table `shared_plans` plus RPC `get_shared_plan(code)` (security definer) in `supabase/schema.sql`. The owner (signed in) creates a random code; `PanicApp` pushes plan and ticks to the row on every change; `/buddy/[code]` polls every 3 seconds and shows a read-only live view. Needs the latest schema.sql to be run.
+
 ## Accounts and saved data (optional layer)
 - `lib/supabase.ts`: browser client, null when env vars are missing (the app then runs as a guest-only app).
 - `supabase/schema.sql`: tables `exams`, `notes`, `flashcards`, `quiz_questions`, `push_subscriptions`, `reminders`; every table has a row level security policy so users only see their own rows.

@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
 import { compactDuration, durationLabel } from "@/lib/time";
+import Link from "next/link";
 import BreathingDialog from "./BreathingDialog";
+import FocusOverlay from "./FocusOverlay";
+import QuickCheckDialog from "./QuickCheckDialog";
 import MorningChecklist from "./MorningChecklist";
 
 const DOT: Record<StoredBlock["type"], string> = {
@@ -43,6 +46,7 @@ export default function PlanView({
   onEdit,
   onStartOver,
   onReplan,
+  onQuickCheck,
   onToggleMorning,
   replanning,
   replanMsg,
@@ -53,6 +57,7 @@ export default function PlanView({
   onEdit: () => void;
   onStartOver: () => void;
   onReplan: () => void;
+  onQuickCheck: (topic: string, wrong: number) => void;
   onToggleMorning: (i: number) => void;
   replanning: boolean;
   replanMsg: string;
@@ -60,6 +65,8 @@ export default function PlanView({
 }) {
   const [now, setNow] = useState<number | null>(null);
   const [breathing, setBreathing] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const [check, setCheck] = useState<{ topic: string; subject: string } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -77,6 +84,7 @@ export default function PlanView({
     const mins = Math.round((b.endMs - b.startMs) / 60000);
     if (b.type === "study") {
       const { name, subject } = splitTopic(b.topic);
+      if (subject === "revisit") return { b, i, title: `${name} — revisit`, subject: "", mins };
       const n = (seen[name] = (seen[name] ?? 0) + 1);
       return { b, i, title: n > 1 ? `${name} — ${ORDINAL[n] ?? `pass ${n}`}` : name, subject: n > 1 ? "" : subject, mins };
     }
@@ -104,6 +112,14 @@ export default function PlanView({
     setTimeout(() => document.getElementById("now-block")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   };
 
+  const toggle = (r: Row) => {
+    if (!plan.done[r.i] && r.b.type === "study") {
+      const { name, subject } = splitTopic(r.b.topic);
+      if (subject !== "revisit") setCheck({ topic: name, subject });
+    }
+    onToggle(r.i);
+  };
+
   const renderRow = (r: Row, past = false) => {
     const done = !!plan.done[r.i];
     const isSleep = r.b.type === "sleep";
@@ -126,7 +142,7 @@ export default function PlanView({
             type="checkbox"
             className="mt-1 h-6 w-6 shrink-0 accent-[var(--accent)]"
             checked={done}
-            onChange={() => onToggle(r.i)}
+            onChange={() => toggle(r)}
             aria-label={`Mark done: ${r.title}, ${r.b.start} to ${r.b.end}`}
           />
         )}
@@ -163,6 +179,17 @@ export default function PlanView({
       )}
       <p role="status" className="mb-4 text-muted empty:hidden">{replanMsg}</p>
       {breathing && <BreathingDialog onClose={closeBreathing} />}
+      {focus && nowRow && now !== null && (
+        <FocusOverlay topic={nowRow.title} initialMs={Math.max(1000, nowRow.b.endMs - now)} onClose={() => setFocus(false)} />
+      )}
+      {check && (
+        <QuickCheckDialog
+          topic={check.topic}
+          subject={check.subject}
+          onFinish={(wrong) => onQuickCheck(check.topic, wrong)}
+          onClose={() => setCheck(null)}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         {/* Left column */}
@@ -204,10 +231,13 @@ export default function PlanView({
                     type="button"
                     className={`btn ${plan.done[nowRow.i] ? "" : "btn-primary"}`}
                     aria-pressed={!!plan.done[nowRow.i]}
-                    onClick={() => onToggle(nowRow.i)}
+                    onClick={() => toggle(nowRow)}
                   >
                     {plan.done[nowRow.i] ? "Done ✓ (tap to undo)" : "Mark done"}
                   </button>
+                )}
+                {nowRow.b.type === "study" && (
+                  <button type="button" className="btn" onClick={() => setFocus(true)}>Focus mode</button>
                 )}
                 <button type="button" className="btn" onClick={() => setBreathing(true)}>Breathe for a minute</button>
               </div>
@@ -290,6 +320,7 @@ export default function PlanView({
             <h2 id="take-title" className="mb-4 text-lg font-bold">Take it with you</h2>
             {extra}
             <div className="no-print mt-4 flex flex-wrap gap-x-5 gap-y-2 text-accent">
+              <Link href="/countdown" className="inline-flex min-h-11 items-center font-semibold underline">Countdown screen</Link>
               <button type="button" className="min-h-11 font-semibold underline" onClick={onEdit}>Edit topics</button>
               <button type="button" className="min-h-11 font-semibold underline" onClick={() => window.print()}>Print plan</button>
               <button type="button" className="min-h-11 font-semibold underline" onClick={() => dialogRef.current?.showModal()}>Start over</button>

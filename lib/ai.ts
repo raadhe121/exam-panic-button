@@ -1,6 +1,6 @@
 import { fmt, roundDown5, roundUp5 } from "./time";
 import { extractJson, validatePlan } from "./validate";
-import { napMode } from "./planner";
+import { isGentle, napMode } from "./planner";
 import { RATING_LABEL, type PlanInput, type PlanResult } from "./types";
 
 const SYSTEM = `You are a calm study planner. Reply with ONLY a JSON object, no prose, no code fences.
@@ -12,7 +12,7 @@ Rules (must all hold):
 - Blocks are back to back (each start equals the previous end), 24h HH:MM, all times multiples of 5 minutes.
 - The first block starts at the study start time. The last block is a single "sleep" block that starts exactly at the sleep time. Never schedule study after the sleep time.
 - Order study topics: "No idea" and starred topics first, then "Shaky", then "Know it".
-- Study lengths: No idea 45-60 min, Shaky 30-40 min, Know it 10-15 min.
+- Study lengths: No idea 45-60 min, Shaky 30-40 min, Know it 10-15 min. GENTLE MODE (only if the input says so): No idea 30-40, Shaky 25-30, Know it 10; every break 10 min; start with one easy topic (a "Know it" or "Shaky" one) to build confidence, then continue in priority order.
 - A 5-10 min break after every study block; one 20-30 min break about every 2 hours.
 - The block just before sleep is type "revision", topic "Quick revision of everything", 20-30 min.
 - If time is too short, shorten or drop "Know it" topics first, then "Shaky". Avoid dropping starred "No idea" topics. List dropped topics in "skipped" with a short kind reason.
@@ -28,7 +28,7 @@ export function buildPrompt(input: PlanInput): string {
 ${nap ? "Nap" : "Sleep"} time (sleep block starts here): ${fmt(roundDown5(input.sleepMin))}
 Sleep block ends at: ${fmt(nap ? Math.min(roundDown5(input.sleepMin) + 30, input.examMin) : input.examMin - roundDown5(input.sleepMin) > 60 ? input.examMin - 45 : input.examMin)}
 Exam time: ${fmt(input.examMin)}
-${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute nap (topic \"Short nap\").\n" : ""}Topics:
+${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute nap (topic \"Short nap\").\n" : ""}${isGentle(input.stress) ? `GENTLE MODE: the student is very stressed (${input.stress}/5).\n` : ""}Topics:
 ${topics}`;
 }
 

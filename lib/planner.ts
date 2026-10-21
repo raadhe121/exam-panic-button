@@ -14,6 +14,15 @@ const RANGE: Record<Rating, { min: number; max: number }> = {
   know: { min: 10, max: 15 },
 };
 
+/** Gentler lengths for students who say they're stressed (4 or 5 out of 5). */
+const GENTLE_RANGE: Record<Rating, { min: number; max: number }> = {
+  noidea: { min: 30, max: 40 },
+  shaky: { min: 25, max: 30 },
+  know: { min: 10, max: 10 },
+};
+
+export const isGentle = (stress?: number) => (stress ?? 3) >= 4;
+
 const TIPS: Record<Rating, string[]> = {
   noidea: [
     "Start with the big picture, then write a 5-line summary in your own words.",
@@ -53,8 +62,9 @@ export function sortTopics(topics: Topic[]): Topic[] {
     .map((x) => x.t);
 }
 
-function baseMinutes(t: Topic) {
-  const r = RANGE[t.rating];
+function baseMinutes(t: Topic, gentle: boolean) {
+  const r = (gentle ? GENTLE_RANGE : RANGE)[t.rating];
+  if (gentle) return r.max;
   return t.starred ? r.max : t.rating === "noidea" ? 50 : t.rating === "shaky" ? 35 : r.min;
 }
 
@@ -64,18 +74,19 @@ function reductionTier(t: Topic): number {
   return base + (t.starred ? 1 : 0);
 }
 
-function breakAfter(minutes: number, sinceLong: number): { len: number; long: boolean } {
-  if (sinceLong >= 110) return { len: 25, long: true };
+function breakAfter(minutes: number, sinceLong: number, gentle = false): { len: number; long: boolean } {
+  if (sinceLong >= (gentle ? 80 : 110)) return { len: 25, long: true };
+  if (gentle) return { len: 10, long: false };
   return { len: minutes > 35 ? 10 : 5, long: false };
 }
 
-function span(entries: Entry[]) {
+function span(entries: Entry[], gentle = false) {
   let total = 0;
   let since = 0;
   for (const e of entries) {
     total += e.minutes;
     since += e.minutes;
-    const b = breakAfter(e.minutes, since);
+    const b = breakAfter(e.minutes, since, gentle);
     total += b.len;
     since = b.long ? 0 : since + b.len;
   }
@@ -103,15 +114,24 @@ export function buildLocalPlan(input: PlanInput): PlanResult {
   const studyEnd = sleep - revisionLen;
   const available = Math.max(0, studyEnd - start);
 
-  const entries: Entry[] = sortTopics(input.topics).map((topic) => ({ topic, minutes: baseMinutes(topic) }));
+  const gentle = isGentle(input.stress);
+  const ordered = sortTopics(input.topics);
+  if (gentle) {
+    // Start with an easy win to build confidence, then continue in priority order.
+    const warm = ordered.findIndex((t) => t.rating === "know" && !t.starred) >= 0
+      ? ordered.findIndex((t) => t.rating === "know" && !t.starred)
+      : ordered.findIndex((t) => t.rating === "shaky" && !t.starred);
+    if (warm > 0) ordered.unshift(...ordered.splice(warm, 1));
+  }
+  const entries: Entry[] = ordered.map((topic) => ({ topic, minutes: baseMinutes(topic, gentle) }));
   const dropped: { topic: Topic; reason: string }[] = [];
 
   // Shorten, then drop, tier by tier (Know it first, starred No idea last).
-  for (let tier = 0; tier <= 5 && span(entries) > available; tier++) {
+  for (let tier = 0; tier <= 5 && span(entries, gentle) > available; tier++) {
     for (const e of entries) {
-      if (reductionTier(e.topic) === tier) e.minutes = RANGE[e.topic.rating].min;
+      if (reductionTier(e.topic) === tier) e.minutes = (gentle ? GENTLE_RANGE : RANGE)[e.topic.rating].min;
     }
-    while (span(entries) > available) {
+    while (span(entries, gentle) > available) {
       let idx = -1;
       for (let i = entries.length - 1; i >= 0; i--) {
         if (reductionTier(entries[i].topic) === tier) {
@@ -133,8 +153,8 @@ export function buildLocalPlan(input: PlanInput): PlanResult {
   }
 
   // Last resort: still too long (tiny window). Trim remaining blocks to fit, in 5 min steps.
-  if (span(entries) > available) {
-    while (entries.length > 1 && span(entries) > available) {
+  if (span(entries, gentle) > available) {
+    while (entries.length > 1 && span(entries, gentle) > available) {
       const gone = entries.pop()!;
       dropped.push({ topic: gone.topic, reason: "Not enough time tonight." });
     }
@@ -161,11 +181,11 @@ export function buildLocalPlan(input: PlanInput): PlanResult {
       topic: e.topic.subject ? `${e.topic.name} (${e.topic.subject})` : e.topic.name,
       start: fmt(t),
       end: fmt(t + e.minutes),
-      tip: isSecond ? SECOND_PASS_TIP : tips[blocks.length % tips.length],
+      tip: isSecond ? SECOND_PASS_TIP : gentle && i === 0 && e.topic.rating !== "noidea" ? "An easy start: a quick win to get you going." : tips[blocks.length % tips.length],
     });
     t += e.minutes;
     since += e.minutes;
-    const b = breakAfter(e.minutes, since);
+    const b = breakAfter(e.minutes, since, gentle);
     const room = studyEnd - t;
     if (room > 0) {
       const len = Math.min(b.len, room);
@@ -180,7 +200,7 @@ export function buildLocalPlan(input: PlanInput): PlanResult {
       since = b.long ? 0 : since + len;
     }
     if (i === queue.length - 1 && queue.length - secondPassStart < priority.length * 2 && studyEnd - t >= 35) {
-      queue.push({ topic: priority[(queue.length - secondPassStart) % priority.length], minutes: 30 });
+      queue.push({ topic: priority[(queue.length - secondPassStart) % priority.length], minutes: gentle ? 25 : 30 });
     }
   }
 
@@ -215,7 +235,7 @@ export function buildLocalPlan(input: PlanInput): PlanResult {
     });
   }
 
-  return finalize(blocks, dropped.map((d) => ({ topic: d.topic.name, reason: d.reason })), start, sleep);
+  return finalize(blocks, dropped.map((d) => ({ topic: d.topic.name, reason: d.reason })), start, sleep, gentle);
 }
 
 export function finalize(
@@ -223,6 +243,7 @@ export function finalize(
   skipped: { topic: string; reason: string }[],
   start: number,
   sleep: number,
+  gentle = false,
 ): PlanResult {
   let studyMinutes = 0;
   const covered = new Set<string>();
@@ -237,6 +258,7 @@ export function finalize(
   let message = skipped.length
     ? "You can't cover everything tonight. Here's the best use of your time."
     : "You have enough time to cover everything. Take it one block at a time.";
+  if (gentle) message = `We kept this plan gentle: ${message.startsWith("You can't") ? "shorter blocks, more breaks and an easy start. You can't cover everything tonight, and that's okay." : "shorter blocks, more breaks and an easy start. You've got this."}`;
   if (windowMins < 60) message = "You have less than an hour tonight, so this is a short plan. Do what you can, calmly.";
   return { summary: { studyMinutes, topicsCovered: covered.size, message }, blocks, skipped };
 }

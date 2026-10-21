@@ -79,3 +79,24 @@ begin
     execute format('create policy "own rows" on %I for all using (auth.uid() = user_id) with check (auth.uid() = user_id)', t);
   end loop;
 end $$;
+
+-- Study buddy: a shared copy of a plan that a friend can follow by link (no login needed to view).
+create table if not exists shared_plans (
+  code text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null default '',
+  plan jsonb not null,
+  done jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table shared_plans enable row level security;
+drop policy if exists "own rows" on shared_plans;
+create policy "own rows" on shared_plans for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Friends read one plan by its secret code, without being able to list other plans.
+create or replace function get_shared_plan(p_code text)
+returns table (title text, plan jsonb, done jsonb, updated_at timestamptz)
+language sql security definer set search_path = public as $$
+  select title, plan, done, updated_at from shared_plans where code = p_code
+$$;
+grant execute on function get_shared_plan(text) to anon, authenticated;

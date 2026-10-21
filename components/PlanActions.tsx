@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { createShare, stopShare } from "@/lib/buddy";
 import { saveExam, scheduleReminders } from "@/lib/exams";
 import { downloadIcs } from "@/lib/ics";
 import { enablePush } from "@/lib/push";
@@ -11,9 +12,11 @@ import { useAuth } from "./AuthProvider";
 export default function PlanActions({
   state,
   onSaved,
+  onShare,
 }: {
   state: AppState;
   onSaved: (id: string, name: string) => void;
+  onShare: (code: string | null) => void;
 }) {
   const { user, configured } = useAuth();
   const [name, setName] = useState(state.examName ?? "");
@@ -80,6 +83,45 @@ export default function PlanActions({
             >
               Remind me before each block
             </button>
+          <div className="flex flex-col gap-2">
+            {state.shareCode ? (
+              <>
+                <label htmlFor="share-link" className="text-sm font-semibold text-muted">Study buddy link (live)</label>
+                <input
+                  id="share-link"
+                  className="input"
+                  readOnly
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/buddy/${state.shareCode}`}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn flex-1"
+                    onClick={() =>
+                      navigator.clipboard
+                        .writeText(`${window.location.origin}/buddy/${state.shareCode}`)
+                        .then(() => setMsg("Link copied. Send it to a friend."), () => setErr("Couldn't copy. Select the link and copy it."))
+                    }
+                  >
+                    Copy link
+                  </button>
+                  <button type="button" className="btn" disabled={busy} onClick={() => run(async () => { await stopShare(state.shareCode!); onShare(null); return "Sharing stopped."; })}>
+                    Stop sharing
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="btn w-full"
+                disabled={busy}
+                onClick={() => run(async () => { onShare(await createShare(user, plan, state.examName || name.trim() || "My plan")); return "Link ready. Send it to a friend."; })}
+              >
+                Study with a friend (live link)
+              </button>
+            )}
+          </div>
           {state.examId && <Link href={`/exams/${state.examId}`} className="btn w-full">Notes, flashcards, quiz</Link>}
         </>
       )}

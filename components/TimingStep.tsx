@@ -6,6 +6,8 @@ import { checkTiming, dayLabel, defaultSleep, nextClock, weekday } from "@/lib/t
 import { durationLabel, inputToMin, minToInput, toLocalMin } from "@/lib/time";
 import Stepper from "./Stepper";
 
+const STRESS = ["Calm", "A bit", "Nervous", "Stressed", "Panicking"];
+
 export default function TimingStep({
   timing,
   onChange,
@@ -136,6 +138,26 @@ export default function TimingStep({
           <span className="text-muted">Time to study</span>
           <span className="tnum font-mono text-xl font-bold" aria-live="polite">{studyMin !== null ? durationLabel(studyMin) : "-"}</span>
         </div>
+
+        <fieldset>
+          <legend className="mb-1 font-semibold">How stressed are you right now?</legend>
+          <p className="mb-3 text-sm text-muted">Be honest. If it&apos;s high, we&apos;ll make your plan gentler: shorter blocks, more breaks and an easy start.</p>
+          <div className="grid grid-cols-5 gap-2">
+            {STRESS.map((label, i) => (
+              <label key={label} className="seg flex-col justify-center !px-1 text-center">
+                <input
+                  type="radio"
+                  className="sr-only"
+                  name="stress"
+                  checked={(timing.stress ?? 3) === i + 1}
+                  onChange={() => update({ stress: i + 1 })}
+                />
+                <span className="text-lg font-bold">{i + 1}</span>
+                <span className="text-xs font-normal text-muted">{label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         {check.warnings.length > 0 && (
           <ul className="flex flex-col gap-2" aria-live="polite">

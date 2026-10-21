@@ -1,4 +1,4 @@
-import { finalize } from "./planner";
+import { finalize, isGentle } from "./planner";
 import { resolveBlocks, roundDown5, roundUp5 } from "./time";
 import type { BlockType, PlanBlock, PlanInput, PlanResult } from "./types";
 
@@ -82,7 +82,7 @@ export function validatePlan(raw: unknown, input: PlanInput): PlanResult | null 
     seen.add(idx);
     const t = input.topics[idx];
     const rank = t.rating === "noidea" || t.starred ? 0 : t.rating === "shaky" ? 1 : 2;
-    if (rank < lastRank) return null;
+    if (rank < lastRank && !isGentle(input.stress)) return null;
     lastRank = rank;
   }
 
@@ -100,7 +100,7 @@ export function validatePlan(raw: unknown, input: PlanInput): PlanResult | null 
     }
   }
 
-  const plan = finalize(blocks, skipped, start, sleep);
+  const plan = finalize(blocks, skipped, start, sleep, isGentle(input.stress));
   if (typeof (r.summary as { message?: unknown })?.message === "string") {
     plan.summary.message = ((r.summary as { message: string }).message).slice(0, 240);
   }

@@ -19,6 +19,7 @@
 - Calendar export (.ics download, works without an account)
 - Push reminders before each block (web push, needs sign-in)
 - "I'm panicking" 60-second breathing exercise, "I'm behind" re-plan from now, syllabus paste to topics (AI with rule-based fallback), morning-of 15-minute checklist
+- Exam-day countdown screen, AI quick check after each study block (wrong answers mark the topic shaky and add a 10-minute revisit), study buddy live link, focus mode, and a 1-5 stress score that makes the plan gentler
 - Guest mode still works with no account: plan, localStorage, print, .ics
 
 ## Still out of scope

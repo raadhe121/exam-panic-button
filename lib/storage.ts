@@ -7,6 +7,8 @@ export interface TimingInputs {
   startAt: string;
   sleepAt: string;
   sleepTouched: boolean;
+  /** "How stressed are you?" 1 to 5. */
+  stress?: number;
 }
 
 export interface StoredBlock extends PlanBlock {
@@ -39,6 +41,8 @@ export interface AppState {
   /** Set when this exam is saved to the user's account. */
   examId?: string | null;
   examName?: string;
+  /** Set while a study-buddy link is live for this plan. */
+  shareCode?: string | null;
 }
 
 export function loadState(): AppState | null {

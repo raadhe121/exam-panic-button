@@ -16,6 +16,8 @@ export interface PlanInput {
   topics: Topic[];
   /** Force nap or full-sleep mode (used when re-planning mid-night). */
   nap?: boolean;
+  /** 1 (calm) to 5 (panicking). 4 and 5 give a gentler plan. */
+  stress?: number;
 }
 
 export type BlockType = "study" | "break" | "revision" | "sleep";

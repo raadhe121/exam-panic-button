@@ -6,7 +6,9 @@ import { buildLocalPlan } from "@/lib/planner";
 import { clearState, loadState, saveState, type AppState, type Stage, type StoredPlan } from "@/lib/storage";
 import { checkTiming, defaultTiming } from "@/lib/timing";
 import { fromLocalMin, inputToMin, resolveBlocks, roundUp5, toLocalMin } from "@/lib/time";
+import { syncShare } from "@/lib/buddy";
 import { remainingTopics } from "@/lib/replan";
+import { addRevisit } from "@/lib/revisit";
 import type { PlanInput, PlanResponse, PlanResult } from "@/lib/types";
 import Landing from "./Landing";
 import PlanActions from "./PlanActions";
@@ -69,6 +71,15 @@ export default function PanicApp() {
     if (state && !intent) saveState(state);
   }, [state, intent]);
 
+  // Keep a live study-buddy link in step with the plan (ticks, re-plans, revisits).
+  const shareCode = state?.shareCode;
+  const sharedPlan = state?.plan;
+  useEffect(() => {
+    if (!shareCode || !sharedPlan) return;
+    const id = setTimeout(() => syncShare(shareCode, sharedPlan).catch(() => {}), 400);
+    return () => clearTimeout(id);
+  }, [shareCode, sharedPlan]);
+
   const patch = useCallback((p: Partial<AppState>) => setState((s) => (s ? { ...s, ...p } : s)), []);
   const go = useCallback((stage: Stage) => patch({ stage }), [patch]);
 
@@ -96,6 +107,7 @@ export default function PanicApp() {
     sleepMin: inputToMin(state!.timing.sleepAt)!,
     examMin: inputToMin(state!.timing.examAt)!,
     topics,
+    stress: state!.timing.stress,
   });
 
   const build = async () => {
@@ -140,9 +152,21 @@ export default function PanicApp() {
     patch({ plan: stored });
   };
 
+  const quickCheckResult = (topicName: string, wrong: number) => {
+    if (wrong === 0 || !state?.plan) return;
+    const topics = state.topics.map((t) => (t.name === topicName && t.rating === "know" ? { ...t, rating: "shaky" as const } : t));
+    const next = addRevisit(state.plan, topicName, Date.now());
+    patch({ topics, ...(next ? { plan: next } : {}) });
+    setReplanMsg(
+      next
+        ? `Added a 10-minute revisit for ${topicName} later tonight.`
+        : `${topicName} is marked shaky. There's no spare break tonight, so give it extra attention in your final revision.`,
+    );
+  };
+
   const startOver = () => {
     clearState();
-    setState({ stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null, examId: null });
+    setState({ stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null, examId: null, shareCode: null });
   };
 
   return (
@@ -180,8 +204,9 @@ export default function PanicApp() {
                 s && s.plan ? { ...s, plan: { ...s.plan, done: { ...s.plan.done, [i]: !s.plan.done[i] } } } : s,
               )
             }
-            extra={<PlanActions state={state} onSaved={(examId, examName) => patch({ examId, examName })} />}
+            extra={<PlanActions state={state} onSaved={(examId, examName) => patch({ examId, examName })} onShare={(shareCode) => patch({ shareCode })} />}
             onReplan={replan}
+            onQuickCheck={quickCheckResult}
             replanning={replanning}
             replanMsg={replanMsg}
             onToggleMorning={(i) =>
