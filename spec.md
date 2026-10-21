@@ -57,6 +57,11 @@ Labelled inputs, radio groups for ratings with text labels, `aria-current` on th
 - Alerts (`lib/alerts.ts`): when a new block starts, `PlanView` plays a Web Audio chime and vibrates (each switchable), and shows a notification if enabled and the tab is hidden. Permission is requested from a button once the plan has started. Browsers pause timers in background tabs on phones, so for reliable background pings signed-in users should also use the server push reminders.
 - Settings (`lib/settings.ts`, key `epb:settings`): theme, default sleep hours (feeds the default bedtime), sound, vibration, notifications.
 
+## History, sharing, onboarding
+- `lib/history.ts` (key `epb:history`, max 50): `PanicApp` upserts an entry (id, name, exam time, topics, blocks done / total) whenever the plan changes; `/history` lists them with progress bars. Works for guests; "Start over" keeps history.
+- `lib/ics.ts`: one event per block with a 5-minute alarm. `lib/shareImage.ts`: draws a 1080 x 1350 PNG on a canvas and passes it to `navigator.share({ files })`, or downloads it when file sharing isn't supported.
+- `Onboarding`: three scroll-snap cards in a dialog on the very first visit (and only when there's no plan yet); Skip or Get started sets `epb:onboarded`.
+
 ## Accounts and saved data (optional layer)
 - `lib/supabase.ts`: browser client, null when env vars are missing (the app then runs as a guest-only app).
 - `supabase/schema.sql`: tables `exams`, `notes`, `flashcards`, `quiz_questions`, `push_subscriptions`, `reminders`; every table has a row level security policy so users only see their own rows.

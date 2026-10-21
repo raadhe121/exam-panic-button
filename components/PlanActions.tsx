@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createShare, stopShare } from "@/lib/buddy";
+import { sharePlanImage } from "@/lib/shareImage";
 import { saveExam, scheduleReminders } from "@/lib/exams";
 import { downloadIcs } from "@/lib/ics";
 import { enablePush } from "@/lib/push";
@@ -49,6 +50,16 @@ export default function PlanActions({
     <div className="no-print flex flex-col gap-3">
       <button type="button" className="btn w-full" onClick={() => downloadIcs(plan.blocks, state.examName || "Exam revision")}>
         Add to calendar (.ics)
+      </button>
+      <button
+        type="button"
+        className="btn w-full"
+        disabled={busy}
+        onClick={() =>
+          run(async () => ((await sharePlanImage(plan, state.examName || "")) === "shared" ? "Shared." : "Saved a picture of your plan to your device."))
+        }
+      >
+        Share plan (picture)
       </button>
 
       {configured && !user && (

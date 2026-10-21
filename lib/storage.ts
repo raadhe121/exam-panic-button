@@ -17,6 +17,8 @@ export interface StoredBlock extends PlanBlock {
 }
 
 export interface StoredPlan {
+  /** Stable id across re-plans, used by Past exams. */
+  id?: string;
   summary: PlanResult["summary"];
   skipped: PlanResult["skipped"];
   blocks: StoredBlock[];

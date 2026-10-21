@@ -16,6 +16,11 @@ export function buildIcs(blocks: StoredBlock[], examName: string): string {
       `DTEND:${stamp(b.endMs)}`,
       `SUMMARY:${esc(b.type === "study" ? `Study: ${label}` : label)}`,
       `DESCRIPTION:${esc(`${examName}. ${b.tip}`)}`,
+      "BEGIN:VALARM",
+      "TRIGGER:-PT5M",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:${esc(`Up next: ${label}`)}`,
+      "END:VALARM",
       "END:VEVENT",
     ].join("\r\n");
   });

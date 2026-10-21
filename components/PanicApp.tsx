@@ -6,11 +6,13 @@ import { buildLocalPlan } from "@/lib/planner";
 import { clearState, loadState, saveState, type AppState, type Stage, type StoredPlan } from "@/lib/storage";
 import { checkTiming, defaultTiming } from "@/lib/timing";
 import { fromLocalMin, inputToMin, resolveBlocks, roundUp5, toLocalMin } from "@/lib/time";
+import { upsertHistory } from "@/lib/history";
 import { syncShare } from "@/lib/buddy";
 import { remainingTopics } from "@/lib/replan";
 import { addRevisit } from "@/lib/revisit";
 import type { PlanInput, PlanResponse, PlanResult } from "@/lib/types";
 import Landing from "./Landing";
+import Onboarding, { ONBOARD_KEY } from "./Onboarding";
 import PlanActions from "./PlanActions";
 import PlanView from "./PlanView";
 import TimingStep from "./TimingStep";
@@ -22,6 +24,7 @@ function toStored(res: PlanResponse, input: PlanInput, nap: boolean): StoredPlan
   const times = resolveBlocks(res.plan.blocks, start);
   if (!times) return null;
   return {
+    id: crypto.randomUUID(),
     examMs: fromLocalMin(input.examMin).getTime(),
     summary: res.plan.summary,
     skipped: res.plan.skipped,
@@ -46,13 +49,20 @@ export default function PanicApp() {
   const params = useSearchParams();
   const intent = params.get("new") ? "new" : params.get("open") ? "open" : null;
   const [fresh, setFresh] = useState(false);
+  const [onboard, setOnboard] = useState(false);
   const [replanning, setReplanning] = useState(false);
   const [replanMsg, setReplanMsg] = useState("");
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate from localStorage after mount */
     const saved = loadState();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from localStorage after mount
+    try {
+      setOnboard(!saved?.plan && !localStorage.getItem(ONBOARD_KEY));
+    } catch {
+      /* ignore */
+    }
     setState(saved ?? { stage: "landing", timing: defaultTiming(toLocalMin(new Date())), topics: [], plan: null });
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   // "My exams" navigates here with ?new=1 or ?open=1. Next can keep this page's old state alive,
@@ -72,6 +82,23 @@ export default function PanicApp() {
   useEffect(() => {
     if (state && !intent) saveState(state);
   }, [state, intent]);
+
+  // Record this exam night in Past exams whenever the plan changes (ticks, re-plans, new plan).
+  useEffect(() => {
+    const plan = state?.plan;
+    if (!plan || !plan.examMs) return;
+    const checkable = plan.blocks.filter((b) => b.type !== "sleep");
+    const doneCount = checkable.filter((_, i) => plan.done[plan.blocks.indexOf(checkable[i])]).length;
+    upsertHistory({
+      id: plan.id ?? `legacy-${plan.examMs}`,
+      name: state?.examName || `Exam on ${new Date(plan.examMs).toLocaleDateString([], { day: "numeric", month: "short" })}`,
+      examMs: plan.examMs,
+      topics: state?.topics.length ?? plan.summary.topicsCovered,
+      total: checkable.length,
+      done: doneCount,
+      updatedAt: Date.now(),
+    });
+  }, [state?.plan, state?.examName, state?.topics.length]);
 
   // Keep a live study-buddy link in step with the plan (ticks, re-plans, revisits).
   const shareCode = state?.shareCode;
@@ -155,6 +182,7 @@ export default function PanicApp() {
       return;
     }
     stored.replannedAt = Date.now();
+    stored.id = state.plan.id ?? stored.id;
     patch({ plan: stored });
   };
 
@@ -177,6 +205,7 @@ export default function PanicApp() {
 
   return (
     <div className={state?.stage === "plan" && state.plan ? "w-full" : "mx-auto w-full max-w-2xl"}>
+        {onboard && state?.stage === "landing" && <Onboarding onDone={() => setOnboard(false)} />}
         {!state ? (
           <p className="text-muted" role="status">Loading...</p>
         ) : state.stage === "landing" ? (
