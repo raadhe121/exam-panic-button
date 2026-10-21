@@ -50,7 +50,7 @@ export default function TimingStep({
   return (
     <section>
       <Stepper step={1} />
-      <h1 className="mb-1 text-3xl font-bold"><span aria-hidden="true">⏰ </span>When&apos;s your exam?</h1>
+      <h1 className="page-title mb-2"><span aria-hidden="true">⏰ </span>When&apos;s your exam?</h1>
       <p className="mb-6 text-muted">We&apos;ll protect your sleep and plan around it.</p>
       <form
         className="card flex flex-col gap-5"

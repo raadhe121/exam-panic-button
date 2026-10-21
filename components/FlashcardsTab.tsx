@@ -90,7 +90,8 @@ export default function FlashcardsTab({ exam }: { exam: ExamRow }) {
   return (
     <div className="flex flex-col gap-4">
       {cards === null ? <p className="text-muted" role="status">Loading...</p> : cards.length === 0 ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">🗂️</p>
           <p className="text-xl font-semibold">No flashcards yet</p>
           <p className="mb-3 text-muted">Let AI make a few per topic, or add your own below.</p>
           <button type="button" className="btn btn-primary" onClick={generate} disabled={busy}>
@@ -105,7 +106,7 @@ export default function FlashcardsTab({ exam }: { exam: ExamRow }) {
           </div>
           <button
             type="button"
-            className="min-h-40 rounded-xl border-2 border-line bg-surface2 p-4 text-left text-lg"
+            className="min-h-48 rounded-2xl border border-line bg-gradient-to-br from-surface2 to-surface p-6 text-left text-xl shadow-lg"
             aria-label={flipped ? "Showing answer. Press to show question." : "Showing question. Press to show answer."}
             onClick={() => setFlipped(!flipped)}
           >

@@ -65,7 +65,8 @@ export default function QuizTab({ exam }: { exam: ExamRow }) {
   return (
     <div className="flex flex-col gap-4">
       {qs === null ? <p className="text-muted" role="status">Loading...</p> : qs.length === 0 ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">🧠</p>
           <p className="text-xl font-semibold">No quiz yet</p>
           <p className="mb-3 text-muted">AI will write a few practice questions for each topic.</p>
           <button type="button" className="btn btn-primary" onClick={generate} disabled={busy}>
@@ -73,7 +74,8 @@ export default function QuizTab({ exam }: { exam: ExamRow }) {
           </button>
         </div>
       ) : finished ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">🎉</p>
           <p className="text-2xl font-bold">You got {score} of {qs.length}</p>
           <p className="mb-3 text-muted">Every round makes the next one easier.</p>
           <button type="button" className="btn btn-primary" onClick={restart}>Try again</button>
@@ -87,7 +89,7 @@ export default function QuizTab({ exam }: { exam: ExamRow }) {
               {q.options.map((o, n) => {
                 const state = picked === null ? "" : n === q.answer ? "correct" : n === picked ? "wrong" : "";
                 return (
-                  <label key={n} className="seg">
+                  <label key={n} className={`seg ${state === "correct" ? "seg-know" : state === "wrong" ? "seg-noidea" : ""}`} style={state ? { borderColor: state === "correct" ? "var(--good)" : "var(--bad)" } : undefined}>
                     <input
                       type="radio"
                       className="sr-only"

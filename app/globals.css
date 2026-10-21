@@ -230,6 +230,43 @@ body::after {
   }
 }
 
+.page-title {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .page-title {
+    font-size: 2.75rem;
+  }
+}
+.tab {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+.tab[aria-selected="true"] {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-ink);
+}
+.tablist {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+dialog {
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+}
 .gradient-text {
   background: linear-gradient(120deg, var(--accent), var(--accent-2) 60%, #a5b4fc);
   -webkit-background-clip: text;

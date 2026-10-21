@@ -73,7 +73,7 @@ export default function TopicsStep({
   return (
     <section>
       <Stepper step={2} />
-      <h1 className="mb-1 text-3xl font-bold"><span aria-hidden="true">📚 </span>What do you need to cover?</h1>
+      <h1 className="page-title mb-2"><span aria-hidden="true">📚 </span>What do you need to cover?</h1>
       <p className="mb-6 text-muted">Add each topic and be honest about how well you know it. Up to {MAX_TOPICS}.</p>
 
       <details className="card mb-4">
@@ -125,7 +125,8 @@ export default function TopicsStep({
       </form>
 
       {topics.length === 0 ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">✏️</p>
           <p className="text-xl font-semibold">Add your first topic</p>
           <p className="text-muted">Start with the one that worries you most. There&apos;s no wrong order.</p>
         </div>

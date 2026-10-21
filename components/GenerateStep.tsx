@@ -18,7 +18,7 @@ export default function GenerateStep({
   return (
     <section>
       <Stepper step={3} />
-      <h1 className="mb-1 text-3xl font-bold"><span aria-hidden="true">✨ </span>Ready when you are.</h1>
+      <h1 className="page-title mb-2"><span aria-hidden="true">✨ </span>Ready when you are.</h1>
       <p className="mb-6 text-muted">One click and your plan is done.</p>
       <dl className="card mb-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
         <dt className="text-muted">Exam</dt>

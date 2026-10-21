@@ -65,7 +65,8 @@ export default function NotesTab({ exam }: { exam: ExamRow }) {
       </form>
 
       {notes === null ? <p className="text-muted" role="status">Loading...</p> : notes.length === 0 ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">📝</p>
           <p className="text-xl font-semibold">No notes yet</p>
           <p className="text-muted">Jot down formulas, tricky definitions or anything you keep forgetting.</p>
         </div>

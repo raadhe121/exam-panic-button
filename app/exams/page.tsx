@@ -48,14 +48,15 @@ export default function ExamsPage() {
   return (
     <section className="mx-auto w-full max-w-2xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold">My exams</h1>
+        <h1 className="page-title"><span aria-hidden="true">🎒 </span>My exams</h1>
         <button type="button" className="btn btn-primary" onClick={newExam}>New exam</button>
       </div>
       <p role="alert" className="text-danger empty:hidden">{err}</p>
       {exams === null && !err ? (
         <p className="text-muted" role="status">Loading...</p>
       ) : exams?.length === 0 ? (
-        <div className="card text-center">
+        <div className="card py-10 text-center">
+          <p aria-hidden="true" className="mb-2 text-4xl">🌱</p>
           <p className="text-xl font-semibold">No saved exams yet</p>
           <p className="text-muted">Make a plan, then press &quot;Save to my exams&quot;.</p>
         </div>
