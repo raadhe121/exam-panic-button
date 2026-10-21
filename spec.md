@@ -1,0 +1,42 @@
+# Technical spec
+
+## Stack
+Next.js (App Router) + React + Tailwind CSS v4, deployed on Vercel. No database.
+
+## Flow / state
+`components/PanicApp.tsx` holds the state: `stage` (landing, timing, topics, generate, plan), timing inputs, topics, and the stored plan (blocks with absolute timestamps and a `done` map). All of it is saved to localStorage (`epb:v1`); theme is stored in `epb:theme`.
+
+## Times
+Datetime inputs are converted to "local epoch minutes" (wall-clock minutes since 1970). The server never needs the user's timezone. Plan blocks use `HH:MM`; `resolveBlocks` walks forward from the start time to get absolute times (handles crossing midnight).
+
+## API: `POST /api/plan`
+Request: `{ startMin, sleepMin, examMin, topics: [{ id, name, subject, rating, starred }] }`
+Response: `{ plan, source: "ai" | "fallback" }` where `plan` is:
+```json
+{
+  "summary": { "studyMinutes": 0, "topicsCovered": 0, "message": "" },
+  "blocks": [{ "type": "study|break|revision|sleep", "topic": null, "start": "HH:MM", "end": "HH:MM", "tip": "" }],
+  "skipped": [{ "topic": "", "reason": "" }]
+}
+```
+1. `lib/ai.ts` calls the Anthropic Messages API using `ANTHROPIC_API_KEY` (server only; optional `ANTHROPIC_MODEL`), asking for JSON only, 20 s timeout.
+2. `lib/validate.ts` checks shape and rules: 5-minute rounding, contiguous blocks, starts at the start time, one final sleep block starting at the sleep time, no block running past it, revision block last before sleep, known topics, ordering, sane lengths. Summary is recomputed.
+3. On any failure (no key, network, bad JSON, rule violation) `lib/planner.ts` builds the plan locally. The client also falls back to the local planner if the API is unreachable.
+
+## Local planner rules (`lib/planner.ts`)
+- Order: starred No idea, No idea, other starred, Shaky, Know it.
+- Lengths: No idea 50 (60 starred), Shaky 35 (40 starred), Know it 10 (15 starred); shortened to 45 / 30 / 10 when tight.
+- Break after each study block: 5 min (10 after blocks over 35 min); 25 min long break once ~110 min of study have passed since the last one.
+- Final 25 min (20 if the window is short) before sleep: "Quick revision of everything".
+- Too little time: shorten then drop tier by tier (Know it, starred Know it, Shaky, starred Shaky, No idea, starred No idea). Dropped topics go to `skipped`.
+- Spare time: up to two extra passes over non-Know-it topics, then a free-time break.
+- Exam less than 7 hours away: sleep block becomes a 30 minute nap, and the sleep input is treated as nap time.
+
+## Validation (UI)
+Exam in the future; exam after start; sleep after start and before exam; 1 to 15 topics; warning under 6 hours of sleep; gentle note if under 1 hour to study.
+
+## Accessibility
+Labelled inputs, radio groups for ratings with text labels, `aria-current` on the Now block, progressbar role, live regions for status and errors, visible focus rings, reduced-motion respected.
+
+## Deploy
+Push to GitHub, import in Vercel, set `ANTHROPIC_API_KEY` (optional).
