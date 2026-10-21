@@ -95,7 +95,7 @@ export default function PanicApp() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6 sm:py-10">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="no-print mb-6 flex items-center justify-between">
         <span className="font-semibold tracking-tight">Exam Panic Button</span>
         <ThemeToggle />
       </header>

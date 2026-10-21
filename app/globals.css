@@ -147,3 +147,23 @@ body {
     transition: none !important;
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  :root,
+  :root[data-theme="dark"] {
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #fff;
+    --line: #999;
+    --ink: #000;
+    --muted: #333;
+    --now: #fff;
+    --accent: #000;
+  }
+  li {
+    break-inside: avoid;
+  }
+}

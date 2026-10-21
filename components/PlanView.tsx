@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
 import { durationLabel } from "@/lib/time";
 
@@ -32,6 +32,7 @@ export default function PlanView({
   onStartOver: () => void;
 }) {
   const [now, setNow] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
@@ -50,7 +51,12 @@ export default function PlanView({
 
   return (
     <section>
-      <h1 className="mb-2 text-3xl font-bold">Your plan for tonight</h1>
+      <div className="mb-2 flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-bold">Your plan for tonight</h1>
+        <span className="no-print rounded-md border border-line px-2 py-0.5 text-sm font-semibold text-muted">
+          {plan.source === "ai" ? "Made by AI" : "Made offline (built-in planner)"}
+        </span>
+      </div>
       <p className="mb-4 text-lg text-muted">{plan.summary.message}</p>
       {plan.studyWindowMin < 60 && (
         <p className="mb-4 rounded-lg border-2 border-line bg-surface2 px-3 py-2">
@@ -155,18 +161,26 @@ export default function PlanView({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="no-print flex flex-wrap gap-3">
         <button type="button" className="btn" onClick={onEdit}>Edit topics</button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            if (window.confirm("Start over? This clears your plan and topics.")) onStartOver();
-          }}
-        >
-          Start over
-        </button>
+        <button type="button" className="btn" onClick={() => window.print()}>Print plan</button>
+        <button type="button" className="btn" onClick={() => dialogRef.current?.showModal()}>Start over</button>
       </div>
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="so-title"
+        className="m-auto w-[min(92vw,28rem)] rounded-2xl border-2 border-line bg-surface p-6 text-ink backdrop:bg-black/60"
+      >
+        <h2 id="so-title" className="mb-2 text-xl font-bold">Start over?</h2>
+        <p className="mb-5 text-muted">This clears your plan and topics. You can&apos;t undo it.</p>
+        <div className="flex justify-end gap-3">
+          <button type="button" className="btn" autoFocus onClick={() => dialogRef.current?.close()}>Keep my plan</button>
+          <button type="button" className="btn btn-primary" onClick={() => { dialogRef.current?.close(); onStartOver(); }}>
+            Yes, start over
+          </button>
+        </div>
+      </dialog>
     </section>
   );
 }
