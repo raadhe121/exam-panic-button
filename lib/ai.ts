@@ -57,7 +57,10 @@ async function viaGroq(key: string, system: string, user: string, maxTokens: num
     await new Promise((r) => setTimeout(r, wait * 1000 + 300));
     return viaGroq(key, system, user, maxTokens, true);
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.error("[ai] Groq request failed", res.status, (await res.text().catch(() => "")).slice(0, 300));
+    return null;
+  }
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return data.choices?.[0]?.message?.content ?? null;
 }
@@ -134,8 +137,8 @@ export async function askVision(system: string, user: string, dataUrl: string, m
       const data = (await res.json()) as { content?: { type: string; text?: string }[] };
       return data.content?.find((c) => c.type === "text")?.text ?? null;
     }
-  } catch {
-    /* network error or timeout */
+  } catch (e) {
+    console.error("[ai] request error", e instanceof Error ? e.message : e);
   }
   return null;
 }
@@ -153,6 +156,7 @@ export async function planWithAI(input: PlanInput): Promise<PlanResult | null> {
     const json = extractJson(text);
     const plan = validatePlan(json, input) ?? validatePlan(repairPlan(json, input), input);
     if (plan) return plan;
+    console.error("[ai] plan rejected by validation, attempt", extra ? 2 : 1);
   }
   return null;
 }
