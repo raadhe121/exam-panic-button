@@ -75,6 +75,19 @@
 
 html {
   font-size: 100%;
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* The picture sits on its own fixed layer: `background-attachment: fixed` is janky or ignored on phones. */
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg-image) center / cover no-repeat;
+  pointer-events: none;
 }
 
 .tnum {
@@ -89,8 +102,11 @@ html {
 }
 
 body {
-  background: var(--bg) var(--bg-image) center / cover no-repeat fixed;
+  background: transparent;
   color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  overflow-wrap: break-word;
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.6;
@@ -142,7 +158,9 @@ body {
 
 .input {
   width: 100%;
+  max-width: 100%;
   min-height: 44px;
+  font-size: 1rem; /* 16px+ stops iOS zooming in on focus */
   padding: 0.5rem 0.75rem;
   border-radius: 0.75rem;
   border: 2px solid var(--line);
@@ -390,4 +408,41 @@ dialog {
 
 button, a, label, input, select, textarea {
   touch-action: manipulation;
+}
+
+/* App shell: respect notches and the home indicator, leave room for the bottom tab bar on phones. */
+.app-shell {
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .app-shell {
+    padding-top: calc(2.5rem + env(safe-area-inset-top));
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 639px) {
+  /* Keep focused or scrolled-to elements clear of the fixed tab bar. */
+  html {
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+  body::before,
+  body::after {
+    filter: blur(50px);
+  }
 }

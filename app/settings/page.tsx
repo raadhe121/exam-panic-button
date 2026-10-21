@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n-client";
+import { useAuth } from "@/components/AuthProvider";
+import { getSupabase } from "@/lib/supabase";
 import { LANGS, parseLang } from "@/lib/i18n";
 import { askNotificationPermission, chime, notificationsSupported, unlockAudio } from "@/lib/alerts";
 import { isIos, isStandalone, promptInstall, useCanInstall } from "@/lib/pwa";
@@ -24,9 +26,11 @@ function Switch({ id, label, hint, checked, onChange }: { id: string; label: str
         aria-checked={checked}
         aria-describedby={hint ? `${id}-hint` : undefined}
         onClick={() => onChange(!checked)}
-        className={`relative h-8 w-14 shrink-0 rounded-full border-2 transition-colors ${checked ? "border-transparent bg-accent" : "border-line bg-surface2"}`}
+        className="relative h-11 w-16 shrink-0"
       >
-        <span className={`absolute top-0.5 h-6 w-6 rounded-full transition-all ${checked ? "left-[1.7rem] bg-accent-ink" : "left-0.5 bg-muted"}`} style={checked ? { background: "var(--accent-ink)" } : undefined} />
+        <span aria-hidden="true" className={`absolute inset-x-1 top-1.5 h-8 rounded-full border-2 transition-colors ${checked ? "border-transparent bg-accent" : "border-line bg-surface2"}`}>
+          <span className={`absolute top-0.5 h-6 w-6 rounded-full transition-all ${checked ? "left-[1.7rem] bg-accent-ink" : "left-0.5 bg-muted"}`} style={checked ? { background: "var(--accent-ink)" } : undefined} />
+        </span>
         <span className="sr-only">{checked ? t("On") : t("Off")}</span>
       </button>
     </div>
@@ -36,6 +40,7 @@ function Switch({ id, label, hint, checked, onChange }: { id: string; label: str
 export default function SettingsPage() {
   const settings = useSettings();
   const t = useT();
+  const { user, ready, configured } = useAuth();
   const canInstall = useCanInstall();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [msg, setMsg] = useState("");
@@ -99,7 +104,7 @@ export default function SettingsPage() {
           <p className="mb-2 text-sm text-muted">{t("Used to suggest your bedtime before the exam.")}</p>
           <select
             id="sleep-hours"
-            className="input !w-auto"
+            className="input !w-auto max-w-full"
             value={settings.sleepHours}
             onChange={(e) => saveSettings({ sleepHours: Number(e.target.value) })}
           >
@@ -122,6 +127,16 @@ export default function SettingsPage() {
         </div>
         <p role="status" className="mt-3 text-muted empty:hidden">{msg}</p>
       </div>
+
+      {configured && ready && user && (
+        <div className="card mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold">{t("Account")}</h2>
+            <p className="break-all text-muted">{user.email}</p>
+          </div>
+          <button type="button" className="btn" onClick={() => getSupabase()?.auth.signOut()}>{t("Sign out")}</button>
+        </div>
+      )}
 
       <div className="card">
         <h2 className="mb-1 text-xl font-bold">{t("Install on your phone")}</h2>

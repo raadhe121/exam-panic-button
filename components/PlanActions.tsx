@@ -66,7 +66,7 @@ export default function PlanActions({
 
       {configured && !user && (
         <p>
-          <Link href="/login" className="font-semibold underline">{t("Sign in")}</Link> {t("to save this exam and get notes, flashcards, quizzes and reminders.")}
+          <Link href="/login" className="inline-flex min-h-11 items-center font-semibold underline">{t("Sign in")}</Link> {t("to save this exam and get notes, flashcards, quizzes and reminders.")}
         </p>
       )}
 

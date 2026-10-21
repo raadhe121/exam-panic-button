@@ -43,7 +43,7 @@ export default function CountdownPage() {
   }, []);
 
   const plan = state?.plan;
-  const shell = "fixed inset-0 z-40 overflow-auto bg-bg p-6 sm:p-10";
+  const shell = "fixed inset-0 z-40 overflow-auto bg-bg p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-10";
 
   if (state === undefined || now === null) return <div className={shell}><p className="text-muted" role="status">{t("Loading...")}</p></div>;
   if (!plan || !plan.examMs) {

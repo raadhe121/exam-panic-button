@@ -24,9 +24,11 @@
 - Installable PWA with offline app shell, block-start notifications (in-page, plus server push for signed-in users), chime and vibration, and a Settings page
 - Past exams (local history with blocks completed), plan share as a picture (native share sheet or download), calendar export with 5-minute alarms, and a 3-card swipe intro with Skip
 - Guest mode still works with no account: plan, localStorage, print, .ics
+- AI provider is switchable (Groq or Anthropic), with one retry on rate limits, plan repair/validation, and server-side logging of failed AI calls; vision (photo scan) goes through the same layer
+- Reminder delivery runs on a Vercel Cron job (`/api/push/send`, daily, protected by `CRON_SECRET`) that sends due web pushes and prunes expired subscriptions; data lives in Supabase (`supabase/schema.sql`)
 
 ## Still out of scope
-Two-way calendar sync (Google/Outlook API), email/SMS reminders, sharing exams between users, teacher/admin features.
+Two-way calendar sync (Google/Outlook API), email/SMS reminders, sharing exams between users, teacher/admin features, languages beyond English/Hindi/Hinglish, native iOS/Android apps (the PWA is the mobile story), minute-precise server push (the cron runs daily on the Vercel free tier; in-page alerts cover the precise timing).
 
 ## Done when
 - Landing to full timed plan in under a minute

@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#0b0e13",
 };
 
@@ -38,11 +39,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-dvh flex flex-col">
         <PwaSetup />
         <LangSync />
         <AuthProvider>
-          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-6 sm:px-8 sm:py-10">
+          <div className="app-shell mx-auto flex w-full max-w-6xl flex-1 flex-col">
             <SiteHeader />
             <main id="main" className="flex-1">{children}</main>
           </div>

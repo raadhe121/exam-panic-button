@@ -536,4 +536,6 @@ export const hinglish: Record<string, string> = {
   "{n} min": "{n} min",
   "{n} h": "{n} h",
   "{h} h {m} min": "{h} h {m} min",
+  "Plan": "Plan",
+  "Account": "Account",
 };

@@ -222,7 +222,7 @@ export default function PlanView({
   return (
     <section className="anim-fade-up" onPointerDown={unlockAudio}>
       {fresh && (
-        <p role="status" className="plan-ready no-print fixed left-1/2 top-4 z-30 -translate-x-1/2 rounded-full border border-nowline bg-now px-5 py-2 font-bold text-accent shadow-lg">
+        <p role="status" className="plan-ready no-print fixed left-1/2 top-[calc(1rem+env(safe-area-inset-top))] z-30 -translate-x-1/2 rounded-full border border-nowline bg-now px-5 py-2 font-bold text-accent shadow-lg">
           ✓ {t("Plan ready")}
         </p>
       )}

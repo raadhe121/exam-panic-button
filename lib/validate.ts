@@ -37,6 +37,14 @@ export function validatePlan(raw: unknown, input: PlanInput): PlanResult | null 
     });
   }
 
+  // Models sometimes pad spare time with dozens of 10-minute breaks. Merge back-to-back breaks into one.
+  for (let i = blocks.length - 1; i > 0; i--) {
+    if (blocks[i].type === "break" && blocks[i - 1].type === "break") {
+      blocks[i - 1] = { ...blocks[i - 1], end: blocks[i].end, tip: "Free time: rest, eat, or revisit your weakest topic." };
+      blocks.splice(i, 1);
+    }
+  }
+
   const skipped: { topic: string; reason: string }[] = [];
   for (const s of r.skipped) {
     if (!s || typeof s !== "object") return null;

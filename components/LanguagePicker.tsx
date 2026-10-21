@@ -13,7 +13,7 @@ export default function LanguagePicker() {
     <label className="flex items-center">
       <span className="sr-only">{t("Language")}</span>
       <select
-        className="input !min-h-11 !w-auto !px-3 !py-2 text-sm font-semibold"
+        className="input !min-h-11 !w-auto !px-3 !py-2 font-semibold"
         value={lang}
         onChange={(e) => saveSettings({ lang: parseLang(e.target.value) })}
       >

@@ -536,4 +536,6 @@ export const hi: Record<string, string> = {
   "{n} min": "{n} मिनट",
   "{n} h": "{n} घंटे",
   "{h} h {m} min": "{h} घंटे {m} मिनट",
+  "Plan": "प्लान",
+  "Account": "खाता",
 };

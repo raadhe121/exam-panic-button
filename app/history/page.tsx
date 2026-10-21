@@ -61,7 +61,7 @@ export default function HistoryPage() {
                   <div>
                     <button
                       type="button"
-                      className="min-h-11 font-semibold text-muted underline hover:text-ink"
+                      className="min-h-11 min-w-11 font-semibold text-muted underline hover:text-ink"
                       aria-label={t("Remove {name} from history", { name: e.name })}
                       onClick={() => {
                         removeHistory(e.id);
