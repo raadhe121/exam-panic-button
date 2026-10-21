@@ -30,7 +30,7 @@ function ExamView() {
   if (exam === undefined) return <p className="text-muted" role="status">Loading...</p>;
   if (exam === null) {
     return (
-      <section>
+      <section className="mx-auto w-full max-w-2xl">
         <h1 className="mb-2 text-2xl font-bold">We couldn&apos;t find that exam</h1>
         <Link href="/exams" className="font-semibold underline">Back to My exams</Link>
       </section>
@@ -38,7 +38,7 @@ function ExamView() {
   }
 
   return (
-    <section>
+    <section className="mx-auto w-full max-w-2xl">
       <Link href="/exams" className="mb-2 inline-block font-semibold underline">All exams</Link>
       <h1 className="mb-4 text-3xl font-bold break-words">{exam.name}</h1>
       <div role="tablist" aria-label="Study tools" className="mb-4 flex gap-2">

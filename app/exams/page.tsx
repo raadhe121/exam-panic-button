@@ -46,7 +46,7 @@ export default function ExamsPage() {
   };
 
   return (
-    <section>
+    <section className="mx-auto w-full max-w-2xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">My exams</h1>
         <button type="button" className="btn btn-primary" onClick={newExam}>New exam</button>

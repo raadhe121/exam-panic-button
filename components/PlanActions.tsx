@@ -43,14 +43,10 @@ export default function PlanActions({
   };
 
   return (
-    <div className="no-print card mb-6 flex flex-col gap-4">
-      <h2 className="text-xl font-bold">Take your plan with you</h2>
-      <div>
-        <button type="button" className="btn" onClick={() => downloadIcs(plan.blocks, state.examName || "Exam revision")}>
-          Add to calendar (.ics)
-        </button>
-        <p className="mt-1 text-sm text-muted">Works with Google Calendar, Apple Calendar and Outlook.</p>
-      </div>
+    <div className="no-print flex flex-col gap-3">
+      <button type="button" className="btn w-full" onClick={() => downloadIcs(plan.blocks, state.examName || "Exam revision")}>
+        Add to calendar (.ics)
+      </button>
 
       {configured && !user && (
         <p>
@@ -61,18 +57,17 @@ export default function PlanActions({
       {configured && user && (
         <>
           <div className="flex flex-col gap-1">
-            <label htmlFor="exam-name" className="font-semibold">Exam name</label>
-            <div className="flex flex-wrap gap-2">
+            <label htmlFor="exam-name" className="text-sm font-semibold text-muted">Exam name</label>
+            <div className="flex gap-2">
               <input id="exam-name" className="input min-w-0 flex-1" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="e.g. Physics final" />
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(async () => { await save(); return "Saved to My exams."; })}>
-                {state.examId ? "Update saved exam" : "Save to my exams"}
+                {state.examId ? "Update" : "Save"}
               </button>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
+          <button
               type="button"
-              className="btn"
+              className="btn w-full"
               disabled={busy}
               onClick={() =>
                 run(async () => {
@@ -85,8 +80,7 @@ export default function PlanActions({
             >
               Remind me before each block
             </button>
-            {state.examId && <Link href={`/exams/${state.examId}`} className="font-semibold underline">Notes, flashcards and quiz</Link>}
-          </div>
+          {state.examId && <Link href={`/exams/${state.examId}`} className="btn w-full">Notes, flashcards, quiz</Link>}
         </>
       )}
       <p aria-live="polite" className={err ? "text-danger" : "text-good"}>{err || msg}</p>

@@ -70,3 +70,11 @@ export function resolveBlocks(
   }
   return out;
 }
+
+/** "2h 15m" style, for compact stat tiles. */
+export function compactDuration(mins: number) {
+  const h = Math.floor(mins / 60);
+  const r = mins % 60;
+  if (h === 0) return `${r}m`;
+  return r === 0 ? `${h}h` : `${h}h ${r}m`;
+}

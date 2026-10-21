@@ -2,16 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { StoredBlock, StoredPlan } from "@/lib/storage";
-import { durationLabel } from "@/lib/time";
+import { compactDuration, durationLabel } from "@/lib/time";
 import BreathingDialog from "./BreathingDialog";
 import MorningChecklist from "./MorningChecklist";
 
-const TYPE_LABEL: Record<StoredBlock["type"], string> = {
-  study: "Study",
-  break: "Break",
-  revision: "Final revision",
-  sleep: "Sleep",
+const DOT: Record<StoredBlock["type"], string> = {
+  study: "var(--dot-study)",
+  break: "var(--dot-break)",
+  revision: "var(--dot-rev)",
+  sleep: "var(--dot-sleep)",
 };
+
+const ORDINAL = ["", "", "second pass", "third pass", "fourth pass", "fifth pass"];
 
 function countdown(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -20,6 +22,19 @@ function countdown(ms: number) {
   const sec = s % 60;
   const p = (n: number) => String(n).padStart(2, "0");
   return h > 0 ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`;
+}
+
+function splitTopic(t: string | null) {
+  const m = t ? /^(.*) \((.+)\)$/.exec(t) : null;
+  return m ? { name: m[1], subject: m[2] } : { name: t ?? "", subject: "" };
+}
+
+interface Row {
+  b: StoredBlock;
+  i: number;
+  title: string;
+  subject: string;
+  mins: number;
 }
 
 export default function PlanView({
@@ -44,9 +59,9 @@ export default function PlanView({
   extra?: React.ReactNode;
 }) {
   const [now, setNow] = useState<number | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [breathing, setBreathing] = useState(false);
-  const [showMorning, setShowMorning] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
@@ -54,174 +69,243 @@ export default function PlanView({
     return () => clearInterval(id);
   }, []);
 
-  const checkable = plan.blocks.map((b, i) => ({ b, i })).filter((x) => x.b.type !== "sleep");
-  const doneCount = checkable.filter((x) => plan.done[x.i]).length;
+  const hhmm = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  // Row data: titles get "second pass" suffixes for repeated study topics.
+  const seen: Record<string, number> = {};
+  const rows: Row[] = plan.blocks.map((b, i) => {
+    const mins = Math.round((b.endMs - b.startMs) / 60000);
+    if (b.type === "study") {
+      const { name, subject } = splitTopic(b.topic);
+      const n = (seen[name] = (seen[name] ?? 0) + 1);
+      return { b, i, title: n > 1 ? `${name} — ${ORDINAL[n] ?? `pass ${n}`}` : name, subject: n > 1 ? "" : subject, mins };
+    }
+    if (b.type === "sleep") return { b, i, title: `${plan.nap ? "Nap" : "Sleep"} until ${b.end}`, subject: "", mins };
+    if (b.type === "revision") return { b, i, title: b.topic ?? "Quick revision", subject: "", mins };
+    return { b, i, title: b.tip.startsWith("Free time") ? "Free time" : "Break", subject: "", mins };
+  });
+
+  const checkable = rows.filter((r) => r.b.type !== "sleep");
+  const doneCount = checkable.filter((r) => plan.done[r.i]).length;
   const pct = checkable.length ? Math.round((doneCount / checkable.length) * 100) : 0;
   const sleepBlock = plan.blocks.find((b) => b.type === "sleep");
   const sleepMin = sleepBlock ? Math.round((sleepBlock.endMs - sleepBlock.startMs) / 60000) : 0;
+
   const nowIdx = now === null ? -1 : plan.blocks.findIndex((b) => now >= b.startMs && now < b.endMs);
+  const nowRow = nowIdx >= 0 ? rows[nowIdx] : null;
   const notStarted = now !== null && now < plan.blocks[0].startMs;
-  const sleepEnd = sleepBlock?.endMs ?? plan.blocks[plan.blocks.length - 1].endMs;
-  const morning = now !== null && now >= sleepEnd && (!plan.examMs || now < plan.examMs + 3 * 3600000);
-  const behind = now === null ? 0 : plan.blocks.filter((b, i) => b.type === "study" && b.endMs <= now && !plan.done[i]).length;
+  const finished = now !== null && now >= plan.blocks[plan.blocks.length - 1].endMs;
+  const earlier = now === null ? [] : rows.filter((r) => r.b.endMs <= now);
+  const upcoming = rows.filter((r) => r.i !== nowIdx && !earlier.includes(r));
+  const behind = earlier.filter((r) => r.b.type === "study" && !plan.done[r.i]).length;
+
   const closeBreathing = () => {
     setBreathing(false);
     setTimeout(() => document.getElementById("now-block")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   };
-  const hhmm = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  const renderRow = (r: Row, past = false) => {
+    const done = !!plan.done[r.i];
+    const isSleep = r.b.type === "sleep";
+    return (
+      <li key={r.i} className={`grid grid-cols-[3.5rem_1.5rem_1fr_auto] items-start gap-x-3 border-t border-line py-4 first:border-t-0 sm:grid-cols-[5rem_2rem_1fr_auto] ${past ? "opacity-75" : ""}`}>
+        <span className="tnum pt-0.5 font-mono text-sm text-muted">{r.b.start}</span>
+        <span className="flex justify-center pt-2"><span className="dot" style={{ background: DOT[r.b.type] }} aria-hidden="true" /></span>
+        <div className="min-w-0">
+          <p className={`font-semibold break-words ${isSleep ? "text-sleepink" : ""} ${done ? "line-through opacity-70" : ""}`}>
+            {r.title}
+            {r.subject && <span className="font-normal text-muted"> · {r.subject}</span>}
+            <span className="ml-2 text-sm font-normal text-muted">{durationLabel(r.mins)}</span>
+          </p>
+          <p className="text-muted">{r.b.tip}</p>
+        </div>
+        {isSleep ? (
+          <span aria-hidden="true" className="w-6" />
+        ) : (
+          <input
+            type="checkbox"
+            className="mt-1 h-6 w-6 shrink-0 accent-[var(--accent)]"
+            checked={done}
+            onChange={() => onToggle(r.i)}
+            aria-label={`Mark done: ${r.title}, ${r.b.start} to ${r.b.end}`}
+          />
+        )}
+      </li>
+    );
+  };
 
   return (
     <section>
-      <div className="mb-2 flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-bold">Your plan for tonight</h1>
-        <span className="no-print rounded-md border border-line px-2 py-0.5 text-sm font-semibold text-muted">
-          {plan.source === "ai" ? "Made by AI" : "Made offline (built-in planner)"}
-        </span>
-      </div>
-      <p className="mb-4 text-lg text-muted">{plan.summary.message}</p>
-      {plan.studyWindowMin < 60 && (
-        <p className="mb-4 rounded-lg border-2 border-line bg-surface2 px-3 py-2">
-          You have under an hour, so this plan is short. That&apos;s okay. A focused hour is still worth a lot.
-        </p>
-      )}
-
-      {plan.replannedAt && (
-        <p className="mb-4 rounded-lg border-2 border-line bg-surface2 px-3 py-2">
-          Re-planned at {hhmm(plan.replannedAt)}. We kept your sleep safe and focused on what matters most.
-        </p>
-      )}
-
-      <div className="no-print mb-4 flex flex-wrap gap-3">
-        <button type="button" className="btn btn-primary text-lg" onClick={() => setBreathing(true)}>
-          I&apos;m panicking
-        </button>
-        <button type="button" className="btn" onClick={onReplan} disabled={replanning}>
-          {replanning ? "Re-planning..." : "I'm behind: re-plan from now"}
-        </button>
-        <button type="button" className="btn" onClick={() => setShowMorning((v) => !v)} aria-expanded={showMorning}>
-          Morning-of checklist
-        </button>
+      {/* Hero */}
+      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted">
+            <span className="dot" style={{ background: "var(--dot-study)", width: "0.5rem", height: "0.5rem" }} aria-hidden="true" />
+            {plan.replannedAt ? `Re-planned at ${hhmm(plan.replannedAt)} · sleep kept safe` : "Your plan is ready · sleep kept safe"}
+          </p>
+          <h1 className="mb-3 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">You&apos;ve got this tonight.</h1>
+          <p className="max-w-xl text-lg text-muted">{plan.summary.message}</p>
+          {plan.studyWindowMin < 60 && (
+            <p className="mt-3 max-w-xl text-muted">You have under an hour, so this plan is short. That&apos;s okay. A focused hour is still worth a lot.</p>
+          )}
+        </div>
+        <div className="no-print flex flex-wrap gap-3">
+          <button type="button" className="btn" onClick={onReplan} disabled={replanning}>
+            {replanning ? "Re-planning..." : "I'm behind — re-plan"}
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => setBreathing(true)}>I&apos;m panicking</button>
+        </div>
       </div>
       {behind > 0 && !replanMsg && (
-        <p className="mb-4 text-muted">You have {behind} unticked block{behind > 1 ? "s" : ""} from earlier. That&apos;s okay. Tap &quot;I&apos;m behind&quot; and we&apos;ll rebuild the rest of the night.</p>
-      )}
-      <p role="status" className="mb-4 text-muted empty:hidden">{replanMsg}</p>
-
-      {(morning || showMorning) && (
-        <MorningChecklist plan={plan} now={now} onToggle={onToggleMorning} onBreathe={() => setBreathing(true)} />
-      )}
-      {breathing && <BreathingDialog onClose={closeBreathing} />}
-
-      <dl className="mb-4 grid grid-cols-3 gap-3 text-center">
-        <div className="card p-3">
-          <dd className="text-2xl font-bold">{durationLabel(plan.summary.studyMinutes)}</dd>
-          <dt className="text-sm text-muted">Study time</dt>
-        </div>
-        <div className="card p-3">
-          <dd className="text-2xl font-bold">{plan.summary.topicsCovered}</dd>
-          <dt className="text-sm text-muted">Topics</dt>
-        </div>
-        <div className="card p-3">
-          <dd className="text-2xl font-bold">{durationLabel(sleepMin)}</dd>
-          <dt className="text-sm text-muted">{plan.nap ? "Nap protected" : "Sleep protected"}</dt>
-        </div>
-      </dl>
-
-      <div className="card mb-6">
-        <div className="mb-2 flex justify-between font-semibold">
-          <span id="prog-label">Progress</span>
-          <span>{doneCount} of {checkable.length} done</span>
-        </div>
-        <div
-          role="progressbar"
-          aria-labelledby="prog-label"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={pct}
-          className="h-3 overflow-hidden rounded-full bg-surface2"
-        >
-          <div className="h-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
-      {notStarted && (
-        <p className="mb-4 rounded-lg border-2 border-accent px-3 py-2" role="status">
-          Your plan starts at {hhmm(plan.blocks[0].startMs)}. Get a drink of water and settle in.
+        <p className="no-print mb-4 text-muted">
+          You have {behind} unticked block{behind > 1 ? "s" : ""} from earlier. That&apos;s okay. Tap &quot;I&apos;m behind&quot; and we&apos;ll rebuild the rest of the night.
         </p>
       )}
+      <p role="status" className="mb-4 text-muted empty:hidden">{replanMsg}</p>
+      {breathing && <BreathingDialog onClose={closeBreathing} />}
 
-      <ol className="mb-8 flex flex-col gap-3">
-        {plan.blocks.map((b, i) => {
-          const isNow = i === nowIdx;
-          const done = !!plan.done[i];
-          const title = b.topic ?? TYPE_LABEL[b.type];
-          const id = `block-${i}`;
-          return (
-            <li
-              key={i}
-              id={isNow ? "now-block" : undefined}
-              aria-current={isNow ? "step" : undefined}
-              className={`rounded-2xl border-2 p-4 ${isNow ? "border-accent bg-now" : "border-line bg-surface"} ${b.type === "break" ? "ml-4" : ""}`}
-            >
-              <div className="flex items-start gap-3">
-                {b.type !== "sleep" ? (
-                  <input
-                    id={id}
-                    type="checkbox"
-                    className="mt-1 h-6 w-6 shrink-0 accent-[var(--accent)]"
-                    checked={done}
-                    onChange={() => onToggle(i)}
-                    aria-label={`Mark done: ${title}, ${b.start} to ${b.end}`}
-                  />
-                ) : (
-                  <span aria-hidden="true" className="mt-1 w-6 shrink-0 text-center">☾</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-                    <span className="font-semibold text-ink">{b.start} to {b.end}</span>
-                    <span>· {durationLabel(Math.round((b.endMs - b.startMs) / 60000))}</span>
-                    <span className="rounded-md border border-line px-2 py-0.5 font-semibold">{TYPE_LABEL[b.type]}</span>
-                    {isNow && now !== null && (
-                      <span className="rounded-md bg-accent px-2 py-0.5 font-bold text-accentink">
-                        Now · <span aria-label="time left">{countdown(b.endMs - now)}</span> left
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-lg font-semibold break-words ${done ? "line-through opacity-70" : ""}`}>{title}</p>
-                  <p className="text-muted">{b.tip}</p>
+      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+        {/* Left column */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {nowRow ? (
+            <div id="now-block" aria-current="step" className="rounded-[1.5rem] border border-nowline bg-now p-6 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">
+                    Now · {nowRow.b.type === "revision" ? "Revision" : nowRow.b.type === "sleep" ? (plan.nap ? "Nap" : "Sleep") : nowRow.b.type === "break" ? "Break" : "Study"}
+                  </p>
+                  <h2 className="text-3xl font-bold tracking-tight break-words sm:text-4xl">
+                    {nowRow.title}
+                    {nowRow.subject && <span className="font-normal text-muted"> · {nowRow.subject}</span>}
+                  </h2>
+                </div>
+                <div className="text-right">
+                  <p className="tnum text-5xl font-bold tracking-tight sm:text-7xl" aria-label="Time left in this block">{countdown(nowRow.b.endMs - (now ?? 0))}</p>
+                  <p className="text-muted">left · ends {nowRow.b.end}</p>
                 </div>
               </div>
-            </li>
-          );
-        })}
-      </ol>
+              <p className="mt-3 text-lg text-muted">{nowRow.b.tip}</p>
+              <div
+                role="progressbar"
+                aria-label="Time used in this block"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.min(100, Math.round(((now! - nowRow.b.startMs) / (nowRow.b.endMs - nowRow.b.startMs)) * 100))}
+                className="my-5 h-2 overflow-hidden rounded-full bg-surface2"
+              >
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{ width: `${Math.min(100, ((now! - nowRow.b.startMs) / (nowRow.b.endMs - nowRow.b.startMs)) * 100)}%` }}
+                />
+              </div>
+              <div className="no-print flex flex-wrap gap-3">
+                {nowRow.b.type !== "sleep" && (
+                  <button
+                    type="button"
+                    className={`btn ${plan.done[nowRow.i] ? "" : "btn-primary"}`}
+                    aria-pressed={!!plan.done[nowRow.i]}
+                    onClick={() => onToggle(nowRow.i)}
+                  >
+                    {plan.done[nowRow.i] ? "Done ✓ (tap to undo)" : "Mark done"}
+                  </button>
+                )}
+                <button type="button" className="btn" onClick={() => setBreathing(true)}>Breathe for a minute</button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[1.5rem] border border-nowline bg-now p-6 sm:p-8" role="status">
+              <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">{finished ? "All done" : "Up first"}</p>
+              <h2 className="text-3xl font-bold tracking-tight">
+                {finished
+                  ? "That's the night. Well done."
+                  : notStarted
+                    ? `Your plan starts at ${plan.blocks[0].start}`
+                    : "Take a moment"}
+              </h2>
+              <p className="mt-2 text-lg text-muted">
+                {finished ? "Check the morning-of list, then go show them what you know." : "Get a drink of water and settle in."}
+              </p>
+            </div>
+          )}
 
-      {plan.skipped.length > 0 && (
-        <div className="card mb-8">
-          <h2 className="mb-1 text-xl font-bold">You can&apos;t cover everything tonight. Here&apos;s the best use of your time.</h2>
-          <p className="mb-3 text-muted">These topics are skipped or skim-only:</p>
-          <ul className="flex flex-col gap-2">
-            {plan.skipped.map((s) => (
-              <li key={s.topic}>
-                <strong>{s.topic}</strong>: <span className="text-muted">{s.reason}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="card">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xl font-bold">Up next</h2>
+              <span id="prog-label" className="text-sm text-muted">{doneCount} of {checkable.length} done</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-labelledby="prog-label"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={pct}
+              className="mb-2 h-1.5 overflow-hidden rounded-full bg-surface2"
+            >
+              <div className="h-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+            </div>
+            {earlier.length > 0 && (
+              <details className="border-t border-line py-3">
+                <summary className="cursor-pointer text-sm font-semibold text-muted">Earlier tonight ({earlier.length})</summary>
+                <ol className="mt-2">{earlier.map((r) => renderRow(r, true))}</ol>
+              </details>
+            )}
+            <ol>{upcoming.map((r) => renderRow(r))}</ol>
+          </div>
+
+          {plan.skipped.length > 0 && (
+            <div className="card">
+              <h2 className="mb-1 text-xl font-bold">You can&apos;t cover everything tonight. Here&apos;s the best use of your time.</h2>
+              <p className="mb-3 text-muted">These topics are skipped or skim-only:</p>
+              <ul className="flex flex-col gap-2">
+                {plan.skipped.map((s) => (
+                  <li key={s.topic}>
+                    <strong>{s.topic}</strong>: <span className="text-muted">{s.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
 
-      {extra}
+        {/* Sidebar */}
+        <aside className="flex min-w-0 flex-col gap-6" aria-label="Plan details">
+          <dl className="grid grid-cols-3 divide-x divide-line overflow-hidden rounded-[1.25rem] border border-line bg-surface text-center">
+            <div className="px-2 py-5">
+              <dd className="text-2xl font-bold tracking-tight">{compactDuration(plan.summary.studyMinutes)}</dd>
+              <dt className="text-sm text-muted">study</dt>
+            </div>
+            <div className="px-2 py-5">
+              <dd className="text-2xl font-bold tracking-tight">{plan.summary.topicsCovered}</dd>
+              <dt className="text-sm text-muted">{plan.summary.topicsCovered === 1 ? "topic" : "topics"}</dt>
+            </div>
+            <div className="px-2 py-5">
+              <dd className="text-2xl font-bold tracking-tight text-sleepink">{compactDuration(sleepMin)}</dd>
+              <dt className="text-sm text-muted">{plan.nap ? "nap" : "sleep"}</dt>
+            </div>
+          </dl>
 
-      <div className="no-print flex flex-wrap gap-3">
-        <button type="button" className="btn" onClick={onEdit}>Edit topics</button>
-        <button type="button" className="btn" onClick={() => window.print()}>Print plan</button>
-        <button type="button" className="btn" onClick={() => dialogRef.current?.showModal()}>Start over</button>
+          <MorningChecklist plan={plan} now={now} onToggle={onToggleMorning} />
+
+          <section className="card" aria-labelledby="take-title">
+            <h2 id="take-title" className="mb-4 text-lg font-bold">Take it with you</h2>
+            {extra}
+            <div className="no-print mt-4 flex flex-wrap gap-x-5 gap-y-2 text-accent">
+              <button type="button" className="min-h-11 font-semibold underline" onClick={onEdit}>Edit topics</button>
+              <button type="button" className="min-h-11 font-semibold underline" onClick={() => window.print()}>Print plan</button>
+              <button type="button" className="min-h-11 font-semibold underline" onClick={() => dialogRef.current?.showModal()}>Start over</button>
+            </div>
+          </section>
+
+          <p className="no-print text-center text-sm text-muted">
+            {plan.source === "ai" ? "Made with AI" : "Made offline with the built-in planner"}
+          </p>
+        </aside>
       </div>
 
       <dialog
         ref={dialogRef}
         aria-labelledby="so-title"
-        className="m-auto w-[min(92vw,28rem)] rounded-2xl border-2 border-line bg-surface p-6 text-ink backdrop:bg-black/60"
+        className="m-auto w-[min(92vw,28rem)] rounded-2xl border border-line bg-surface p-6 text-ink backdrop:bg-black/60"
       >
         <h2 id="so-title" className="mb-2 text-xl font-bold">Start over?</h2>
         <p className="mb-5 text-muted">This clears your plan and topics. You can&apos;t undo it.</p>

@@ -128,7 +128,7 @@ export default function PanicApp() {
   };
 
   return (
-    <>
+    <div className={state?.stage === "plan" && state.plan ? "w-full" : "mx-auto w-full max-w-2xl"}>
         {!state ? (
           <p className="text-muted" role="status">Loading...</p>
         ) : state.stage === "landing" ? (
@@ -177,6 +177,6 @@ export default function PanicApp() {
         ) : (
           <Landing onStart={() => go("timing")} />
         )}
-    </>
+    </div>
   );
 }

@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   if (!configured) {
     return (
-      <section>
+      <section className="mx-auto w-full max-w-2xl">
         <h1 className="mb-2 text-3xl font-bold">Accounts aren&apos;t set up yet</h1>
         <p className="text-muted">The site owner needs to add the Supabase keys. You can still make a plan without signing in.</p>
       </section>
@@ -46,7 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <section>
+    <section className="mx-auto w-full max-w-2xl">
       <h1 className="mb-1 text-3xl font-bold">{mode === "in" ? "Sign in" : "Create your account"}</h1>
       <p className="mb-6 text-muted">Save your exams and keep notes, flashcards and quizzes in one place.</p>
       <form className="card flex flex-col gap-4" onSubmit={submit}>

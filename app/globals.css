@@ -2,19 +2,25 @@
 
 :root,
 :root[data-theme="dark"] {
-  --bg: #0f1722;
-  --surface: #172233;
-  --surface-2: #1e2b40;
-  --line: #34465f;
-  --ink: #e9eff8;
-  --muted: #b2c0d3;
+  --bg: #0b0e13;
+  --surface: #11151c;
+  --surface-2: #181e28;
+  --line: #2a3342;
+  --ink: #eef2f7;
+  --muted: #9ba7b8;
   --accent: #5eead4;
-  --accent-ink: #062b27;
-  --now: #1c3a45;
+  --accent-ink: #04201d;
+  --now: #10201f;
+  --now-line: #1f4d47;
   --good: #86efac;
   --warn: #fcd34d;
   --bad: #fda4af;
   --danger: #fecaca;
+  --dot-study: #5eead4;
+  --dot-break: #4b5565;
+  --dot-rev: #fdba74;
+  --dot-sleep: #a5b4fc;
+  --sleep-ink: #b4bffd;
   color-scheme: dark;
 }
 
@@ -27,11 +33,17 @@
   --muted: #455669;
   --accent: #0f766e;
   --accent-ink: #ffffff;
-  --now: #d9f3ee;
+  --now: #e3f6f2;
+  --now-line: #8fd3c8;
   --good: #166534;
   --warn: #92400e;
   --bad: #9f1239;
   --danger: #991b1b;
+  --dot-study: #0f766e;
+  --dot-break: #8795a8;
+  --dot-rev: #c2410c;
+  --dot-sleep: #4f46e5;
+  --sleep-ink: #4338ca;
   color-scheme: light;
 }
 
@@ -45,15 +57,29 @@
   --color-accent: var(--accent);
   --color-accentink: var(--accent-ink);
   --color-now: var(--now);
+  --color-nowline: var(--now-line);
+  --color-sleepink: var(--sleep-ink);
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html {
   font-size: 100%;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
 }
 
 body {
@@ -77,9 +103,9 @@ body {
   gap: 0.5rem;
   min-height: 44px;
   padding: 0.5rem 1.25rem;
-  border-radius: 0.75rem;
-  border: 2px solid var(--line);
-  background: var(--surface-2);
+  border-radius: 0.875rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--ink);
   font-weight: 600;
   cursor: pointer;
@@ -116,8 +142,8 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 1rem;
-  padding: 1.25rem;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
 }
 
 .seg {
