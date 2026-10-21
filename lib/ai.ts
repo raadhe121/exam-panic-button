@@ -33,13 +33,15 @@ ${topics}`;
 }
 
 async function viaGroq(key: string, system: string, user: string, maxTokens: number): Promise<string | null> {
+  const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-      max_tokens: maxTokens,
+      model,
+      max_tokens: maxTokens + 1500, // reasoning models spend part of the budget thinking
       temperature: 0.4,
+      ...(model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },

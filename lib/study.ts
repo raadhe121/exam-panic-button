@@ -33,6 +33,13 @@ export function parseTopics(raw: unknown): TopicRef[] | null {
   return out;
 }
 
+/** Maps whatever topic label the model returned ("Name", "Name (Subject)") back to one of our topic names. */
+function canonicalTopic(label: string, topics: TopicRef[]): string {
+  const l = label.toLowerCase();
+  const hit = topics.find((t) => l === t.name.toLowerCase() || l.startsWith(`${t.name.toLowerCase()} (`) || l.includes(t.name.toLowerCase()));
+  return hit?.name ?? "";
+}
+
 const list = (topics: TopicRef[]) => topics.map((t) => `- ${t.name}${t.subject ? ` (${t.subject})` : ""}`).join("\n");
 
 export async function generateCards(topics: TopicRef[], perTopic: number): Promise<CardDraft[] | null> {
@@ -45,14 +52,13 @@ export async function generateCards(topics: TopicRef[], perTopic: number): Promi
   if (!text) return null;
   const cards = (extractJson(text) as { cards?: unknown[] } | null)?.cards;
   if (!Array.isArray(cards)) return null;
-  const names = new Set(topics.map((t) => t.name.toLowerCase()));
   const out: CardDraft[] = [];
   for (const c of cards.slice(0, 80)) {
     const o = c as Record<string, unknown>;
     const topic = str(o?.topic, 80);
     const front = str(o?.front, 300);
     const back = str(o?.back, 500);
-    if (topic && front && back && names.has(topic.toLowerCase())) out.push({ topic, front, back });
+    if (front && back) out.push({ topic: canonicalTopic(topic ?? "", topics), front, back });
   }
   return out.length ? out : null;
 }
@@ -69,7 +75,6 @@ export async function generateQuiz(topics: TopicRef[], perTopic: number): Promis
   if (!text) return null;
   const qs = (extractJson(text) as { questions?: unknown[] } | null)?.questions;
   if (!Array.isArray(qs)) return null;
-  const names = new Set(topics.map((t) => t.name.toLowerCase()));
   const out: QuestionDraft[] = [];
   for (const q of qs.slice(0, 80)) {
     const o = q as Record<string, unknown>;
@@ -77,10 +82,9 @@ export async function generateQuiz(topics: TopicRef[], perTopic: number): Promis
     const question = str(o?.question, 400);
     const opts = Array.isArray(o?.options) ? o.options.map((x) => str(x, 200)) : [];
     const answer = o?.answer;
-    if (!topic || !question || opts.length !== 4 || opts.some((x) => !x)) continue;
+    if (!question || opts.length !== 4 || opts.some((x) => !x)) continue;
     if (!Number.isInteger(answer) || (answer as number) < 0 || (answer as number) > 3) continue;
-    if (!names.has(topic.toLowerCase())) continue;
-    out.push({ topic, question, options: opts as string[], answer: answer as number, explanation: str(o.explanation, 300) ?? "" });
+    out.push({ topic: canonicalTopic(topic ?? "", topics), question, options: opts as string[], answer: answer as number, explanation: str(o.explanation, 300) ?? "" });
   }
   return out.length ? out : null;
 }

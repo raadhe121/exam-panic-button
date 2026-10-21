@@ -19,7 +19,7 @@ Response: `{ plan, source: "ai" | "fallback" }` where `plan` is:
   "skipped": [{ "topic": "", "reason": "" }]
 }
 ```
-1. `lib/ai.ts#askAI` calls Groq (OpenAI-compatible chat completions, JSON mode, `GROQ_API_KEY`, optional `GROQ_MODEL`, default `llama-3.3-70b-versatile`) or, if no Groq key, the Anthropic Messages API (`ANTHROPIC_API_KEY`). Server only, JSON only, 25 s timeout.
+1. `lib/ai.ts#askAI` calls Groq (OpenAI-compatible chat completions, JSON mode, `GROQ_API_KEY`, optional `GROQ_MODEL`, default `openai/gpt-oss-120b`) or, if no Groq key, the Anthropic Messages API (`ANTHROPIC_API_KEY`). Server only, JSON only, 25 s timeout.
 2. `lib/validate.ts` checks shape and rules: 5-minute rounding, contiguous blocks, starts at the start time, one final sleep block starting at the sleep time, no block running past it, revision block last before sleep, known topics, ordering, sane lengths. Summary is recomputed.
 3. On any failure (no key, network, bad JSON, rule violation) `lib/planner.ts` builds the plan locally. The client also falls back to the local planner if the API is unreachable.
 
