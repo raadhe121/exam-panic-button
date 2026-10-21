@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 import { useAuth } from "./AuthProvider";
+import LanguagePicker from "./LanguagePicker";
 import ThemeToggle from "./ThemeToggle";
 
 export default function SiteHeader() {
   const { user, ready, configured } = useAuth();
+  const t = useT();
   return (
     <header className="no-print mb-10 flex flex-wrap items-center justify-between gap-3">
       <Link href="/" className="flex items-center gap-3 font-bold tracking-tight">
@@ -18,28 +21,35 @@ export default function SiteHeader() {
         </span>
         Exam Panic Button
       </Link>
-      <nav aria-label="Main" className="flex flex-wrap items-center gap-1 sm:gap-2">
-        <Link href="/settings" aria-label="Settings" className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:text-ink">
+      <nav aria-label={t("Main")} className="flex flex-wrap items-center gap-1 sm:gap-2">
+        <Link href="/settings" aria-label={t("Settings")} className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:text-ink">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3h0a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8v0a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
           </svg>
         </Link>
-        <Link href="/history" className="rounded-lg px-3 py-2 font-semibold text-muted hover:text-ink">History</Link>
+        <Link href="/history" className="rounded-lg px-3 py-2 font-semibold text-muted hover:text-ink">{t("History")}</Link>
         {configured && ready && user && (
           <>
-            <Link href="/exams" className="rounded-lg px-3 py-2 font-semibold text-muted hover:text-ink">My exams</Link>
+            <Link href="/exams" className="rounded-lg px-3 py-2 font-semibold text-muted hover:text-ink">{t("My exams")}</Link>
+            <LanguagePicker />
             <ThemeToggle />
-            <button type="button" className="btn" onClick={() => getSupabase()?.auth.signOut()}>Sign out</button>
+            <button type="button" className="btn" onClick={() => getSupabase()?.auth.signOut()}>{t("Sign out")}</button>
           </>
         )}
         {configured && ready && !user && (
           <>
+            <LanguagePicker />
             <ThemeToggle />
-            <Link href="/login" className="btn">Sign in</Link>
+            <Link href="/login" className="btn">{t("Sign in")}</Link>
           </>
         )}
-        {!(configured && ready) && <ThemeToggle />}
+        {!(configured && ready) && (
+          <>
+            <LanguagePicker />
+            <ThemeToggle />
+          </>
+        )}
       </nav>
     </header>
   );

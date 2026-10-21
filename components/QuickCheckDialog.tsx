@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLang, useT } from "@/lib/i18n";
 
 interface Q {
   question: string;
@@ -21,6 +22,8 @@ export default function QuickCheckDialog({
   onFinish: (wrong: number) => void;
   onClose: () => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const ref = useRef<HTMLDialogElement>(null);
   const [qs, setQs] = useState<Q[] | null>(null);
   const [err, setErr] = useState("");
@@ -34,15 +37,16 @@ export default function QuickCheckDialog({
     fetch("/api/quickcheck", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ topic, subject }),
+      body: JSON.stringify({ topic, subject, lang }),
     })
       .then(async (r) => {
         const j = await r.json();
         if (!r.ok) throw new Error(j.error);
         setQs(j.questions as Q[]);
       })
-      .catch((e) => setErr(e instanceof Error && e.message ? e.message : "Couldn't make a quick check right now."));
-  }, [topic, subject]);
+      .catch((e) => setErr(t(e instanceof Error && e.message ? e.message : "Couldn't make a quick check right now.")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once per topic; `t` only changes with the language
+  }, [topic, subject, lang]);
 
   const q = qs?.[i];
   const last = qs ? i + 1 >= qs.length : false;
@@ -64,32 +68,32 @@ export default function QuickCheckDialog({
       onClose={onClose}
       className="m-auto w-[min(92vw,34rem)] rounded-3xl border border-line bg-surface p-6 text-ink backdrop:bg-black/60 sm:p-8"
     >
-      <p className="mb-1 text-sm font-bold uppercase tracking-widest text-accent">Quick check</p>
+      <p className="mb-1 text-sm font-bold uppercase tracking-widest text-accent">{t("Quick check")}</p>
       <h2 id="qc-title" className="mb-4 text-2xl font-bold break-words">{topic}</h2>
 
       {err ? (
         <>
-          <p role="alert" className="mb-4 text-muted">{err} You can skip it. Your progress is saved.</p>
-          <button type="button" className="btn" autoFocus onClick={() => ref.current?.close()}>Close</button>
+          <p role="alert" className="mb-4 text-muted">{err} {t("You can skip it. Your progress is saved.")}</p>
+          <button type="button" className="btn" autoFocus onClick={() => ref.current?.close()}>{t("Close")}</button>
         </>
       ) : !qs ? (
-        <p role="status" className="text-muted">Getting two quick questions...</p>
+        <p role="status" className="text-muted">{t("Getting two quick questions...")}</p>
       ) : finished ? (
         <>
           <p className="mb-2 text-xl font-semibold">
-            {wrong === 0 ? "Nice, you've got this one." : wrong === qs.length ? "That one needs another look." : "Almost there."}
+            {wrong === 0 ? t("Nice, you've got this one.") : wrong === qs.length ? t("That one needs another look.") : t("Almost there.")}
           </p>
           <p className="mb-5 text-muted">
             {wrong === 0
-              ? "On to the next block."
-              : "We've marked it as shaky and added a 10-minute revisit to your plan if there's room."}
+              ? t("On to the next block.")
+              : t("We've marked it as shaky and added a 10-minute revisit to your plan if there's room.")}
           </p>
-          <button type="button" className="btn btn-primary" autoFocus onClick={() => ref.current?.close()}>Back to my plan</button>
+          <button type="button" className="btn btn-primary" autoFocus onClick={() => ref.current?.close()}>{t("Back to my plan")}</button>
         </>
       ) : (
         q && (
           <>
-            <p className="mb-3 text-sm text-muted">Question {i + 1} of {qs.length}</p>
+            <p className="mb-3 text-sm text-muted">{t("Question {a} of {b}", { a: i + 1, b: qs.length })}</p>
             <fieldset>
               <legend className="mb-3 text-lg font-semibold">{q.question}</legend>
               <div className="flex flex-col gap-2">
@@ -110,8 +114,8 @@ export default function QuickCheckDialog({
                       />
                       <span>
                         {o}
-                        {state === "correct" && <strong className="text-good"> (correct)</strong>}
-                        {state === "wrong" && <strong className="text-bad"> (not quite)</strong>}
+                        {state === "correct" && <strong className="text-good"> {t("(correct)")}</strong>}
+                        {state === "wrong" && <strong className="text-bad"> {t("(not quite)")}</strong>}
                       </span>
                     </label>
                   );
@@ -122,7 +126,7 @@ export default function QuickCheckDialog({
               <>
                 <p aria-live="polite" className="mt-3 text-muted">{q.explanation}</p>
                 <div className="mt-4 flex justify-end">
-                  <button type="button" className="btn btn-primary" autoFocus onClick={next}>{last ? "Finish" : "Next question"}</button>
+                  <button type="button" className="btn btn-primary" autoFocus onClick={next}>{last ? t("Finish") : t("Next question")}</button>
                 </div>
               </>
             )}
@@ -130,7 +134,7 @@ export default function QuickCheckDialog({
         )
       )}
       {!err && !finished && qs && (
-        <button type="button" className="mt-4 min-h-11 text-sm font-semibold text-muted underline" onClick={() => ref.current?.close()}>Skip the check</button>
+        <button type="button" className="mt-4 min-h-11 text-sm font-semibold text-muted underline" onClick={() => ref.current?.close()}>{t("Skip the check")}</button>
       )}
     </dialog>
   );

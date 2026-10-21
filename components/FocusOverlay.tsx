@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 function clock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -23,6 +24,7 @@ export default function FocusOverlay({
   initialMs: number;
   onClose: () => void;
 }) {
+  const t = useT();
   const [left, setLeft] = useState(initialMs);
   const [away, setAway] = useState(false);
   const [awayMs, setAwayMs] = useState(0);
@@ -60,25 +62,25 @@ export default function FocusOverlay({
   const done = left <= 0;
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Focus mode: ${topic}`} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-bg p-6 text-center">
+    <div role="dialog" aria-modal="true" aria-label={t("Focus mode: {topic}", { topic })} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-bg p-6 text-center">
       {away ? (
         <>
-          <h2 className="text-3xl font-bold sm:text-5xl">Back to {topic}?</h2>
+          <h2 className="text-3xl font-bold sm:text-5xl">{t("Back to {topic}?", { topic })}</h2>
           <p className="text-lg text-muted">
-            Your timer paused while you were away ({Math.max(1, Math.round(awayMs / 1000))}s). No worries, it happens.
+            {t("Your timer paused while you were away ({n}s). No worries, it happens.", { n: Math.max(1, Math.round(awayMs / 1000)) })}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <button type="button" className="btn btn-primary text-lg" autoFocus onClick={resume}>Yes, keep going</button>
-            <button type="button" className="btn" onClick={onClose}>Leave focus mode</button>
+            <button type="button" className="btn btn-primary text-lg" autoFocus onClick={resume}>{t("Yes, keep going")}</button>
+            <button type="button" className="btn" onClick={onClose}>{t("Leave focus mode")}</button>
           </div>
         </>
       ) : (
         <>
-          <p className="text-sm font-bold uppercase tracking-widest text-accent">Focus</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-accent">{t("Focus")}</p>
           <h2 className="max-w-3xl text-4xl font-extrabold tracking-tight break-words sm:text-6xl">{topic}</h2>
-          <p className="tnum text-7xl font-bold tracking-tight sm:text-9xl" role="timer" aria-label="Time left">{clock(left)}</p>
-          <p className="text-muted">{done ? "Block finished. Well done." : "Switching tabs pauses the timer."}</p>
-          <button type="button" className="btn" autoFocus onClick={onClose}>{done ? "Done" : "Leave focus mode"}</button>
+          <p className="tnum text-7xl font-bold tracking-tight sm:text-9xl" role="timer" aria-label={t("Time left")}>{clock(left)}</p>
+          <p className="text-muted">{done ? t("Block finished. Well done.") : t("Switching tabs pauses the timer.")}</p>
+          <button type="button" className="btn" autoFocus onClick={onClose}>{done ? t("Done") : t("Leave focus mode")}</button>
         </>
       )}
     </div>

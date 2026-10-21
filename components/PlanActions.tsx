@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createShare, stopShare } from "@/lib/buddy";
+import { useT } from "@/lib/i18n";
 import { sharePlanImage } from "@/lib/shareImage";
 import { saveExam, scheduleReminders } from "@/lib/exams";
 import { downloadIcs } from "@/lib/ics";
@@ -20,6 +21,7 @@ export default function PlanActions({
   onShare: (code: string | null) => void;
 }) {
   const { user, configured } = useAuth();
+  const t = useT();
   const [name, setName] = useState(state.examName ?? "");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -33,7 +35,7 @@ export default function PlanActions({
     try {
       setMsg(await fn());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+      setErr(t(e instanceof Error ? e.message : "Something went wrong. Please try again."));
     }
     setBusy(false);
   };
@@ -49,33 +51,33 @@ export default function PlanActions({
   return (
     <div className="no-print flex flex-col gap-3">
       <button type="button" className="btn w-full" onClick={() => downloadIcs(plan.blocks, state.examName || "Exam revision")}>
-        Add to calendar (.ics)
+        {t("Add to calendar (.ics)")}
       </button>
       <button
         type="button"
         className="btn w-full"
         disabled={busy}
         onClick={() =>
-          run(async () => ((await sharePlanImage(plan, state.examName || "")) === "shared" ? "Shared." : "Saved a picture of your plan to your device."))
+          run(async () => ((await sharePlanImage(plan, state.examName || "")) === "shared" ? t("Shared.") : t("Saved a picture of your plan to your device.")))
         }
       >
-        Share plan (picture)
+        {t("Share plan (picture)")}
       </button>
 
       {configured && !user && (
         <p>
-          <Link href="/login" className="font-semibold underline">Sign in</Link> to save this exam and get notes, flashcards, quizzes and reminders.
+          <Link href="/login" className="font-semibold underline">{t("Sign in")}</Link> {t("to save this exam and get notes, flashcards, quizzes and reminders.")}
         </p>
       )}
 
       {configured && user && (
         <>
           <div className="flex flex-col gap-1">
-            <label htmlFor="exam-name" className="text-sm font-semibold text-muted">Exam name</label>
+            <label htmlFor="exam-name" className="text-sm font-semibold text-muted">{t("Exam name")}</label>
             <div className="flex gap-2">
-              <input id="exam-name" className="input min-w-0 flex-1" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="e.g. Physics final" />
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(async () => { await save(); return "Saved to My exams."; })}>
-                {state.examId ? "Update" : "Save"}
+              <input id="exam-name" className="input min-w-0 flex-1" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder={t("e.g. Physics final")} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(async () => { await save(); return t("Saved to My exams."); })}>
+                {state.examId ? t("Update") : t("Save")}
               </button>
             </div>
           </div>
@@ -88,16 +90,16 @@ export default function PlanActions({
                   const id = await save();
                   await enablePush(user);
                   const n = await scheduleReminders(user, id, name.trim(), plan);
-                  return n ? `Done. We'll nudge you before ${n} upcoming blocks.` : "Done, but no upcoming blocks are left to remind you about.";
+                  return n ? t("Done. We'll nudge you before {n} upcoming blocks.", { n }) : t("Done, but no upcoming blocks are left to remind you about.");
                 })
               }
             >
-              Remind me before each block
+              {t("Remind me before each block")}
             </button>
           <div className="flex flex-col gap-2">
             {state.shareCode ? (
               <>
-                <label htmlFor="share-link" className="text-sm font-semibold text-muted">Study buddy link (live)</label>
+                <label htmlFor="share-link" className="text-sm font-semibold text-muted">{t("Study buddy link (live)")}</label>
                 <input
                   id="share-link"
                   className="input"
@@ -112,13 +114,13 @@ export default function PlanActions({
                     onClick={() =>
                       navigator.clipboard
                         .writeText(`${window.location.origin}/buddy/${state.shareCode}`)
-                        .then(() => setMsg("Link copied. Send it to a friend."), () => setErr("Couldn't copy. Select the link and copy it."))
+                        .then(() => setMsg(t("Link copied. Send it to a friend.")), () => setErr(t("Couldn't copy. Select the link and copy it.")))
                     }
                   >
-                    Copy link
+                    {t("Copy link")}
                   </button>
-                  <button type="button" className="btn" disabled={busy} onClick={() => run(async () => { await stopShare(state.shareCode!); onShare(null); return "Sharing stopped."; })}>
-                    Stop sharing
+                  <button type="button" className="btn" disabled={busy} onClick={() => run(async () => { await stopShare(state.shareCode!); onShare(null); return t("Sharing stopped."); })}>
+                    {t("Stop sharing")}
                   </button>
                 </div>
               </>
@@ -127,13 +129,13 @@ export default function PlanActions({
                 type="button"
                 className="btn w-full"
                 disabled={busy}
-                onClick={() => run(async () => { onShare(await createShare(user, plan, state.examName || name.trim() || "My plan")); return "Link ready. Send it to a friend."; })}
+                onClick={() => run(async () => { onShare(await createShare(user, plan, state.examName || name.trim() || "My plan")); return t("Link ready. Send it to a friend."); })}
               >
-                Study with a friend (live link)
+                {t("Study with a friend (live link)")}
               </button>
             )}
           </div>
-          {state.examId && <Link href={`/exams/${state.examId}`} className="btn w-full">Notes, flashcards, quiz</Link>}
+          {state.examId && <Link href={`/exams/${state.examId}`} className="btn w-full">{t("Notes, flashcards, quiz")}</Link>}
         </>
       )}
       <p aria-live="polite" className={err ? "text-danger" : "text-good"}>{err || msg}</p>

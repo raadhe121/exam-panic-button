@@ -1,3 +1,4 @@
+import { dateLocale, translate, type Lang } from "./i18n";
 import { loadSettings } from "./settings";
 import { DAY, inputToMin, minToInput, roundUp5 } from "./time";
 import { MIN_GOOD_SLEEP_MINUTES, NAP_MODE_MINUTES } from "./types";
@@ -61,24 +62,24 @@ export function checkTiming(t: TimingInputs, nowMin: number): TimingCheck {
 const utc = (min: number) => new Date(min * 60000);
 
 /** "Thu 22 Oct" for a local-epoch minute. */
-export function shortDate(min: number) {
+export function shortDate(min: number, lang: Lang = "en") {
   return utc(min)
-    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .toLocaleDateString(dateLocale(lang), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
     .replace(",", "");
 }
 
-export function weekday(min: number) {
-  return utc(min).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+export function weekday(min: number, lang: Lang = "en") {
+  return utc(min).toLocaleDateString(dateLocale(lang), { weekday: "long", timeZone: "UTC" });
 }
 
 /** "Today", "Tomorrow", or a short date. With `night`, evening/early-morning times within a day read "Tonight". */
-export function dayLabel(min: number, nowMin: number, night = false) {
+export function dayLabel(min: number, nowMin: number, night = false, lang: Lang = "en") {
   const hour = Math.floor(mod24(min) / 60);
-  if (night && min - nowMin < DAY && min >= nowMin && (hour >= 18 || hour < 6)) return "Tonight";
+  if (night && min - nowMin < DAY && min >= nowMin && (hour >= 18 || hour < 6)) return translate(lang, "Tonight");
   const diff = Math.floor(min / DAY) - Math.floor(nowMin / DAY);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Tomorrow";
-  return shortDate(min);
+  if (diff === 0) return translate(lang, "Today");
+  if (diff === 1) return translate(lang, "Tomorrow");
+  return shortDate(min, lang);
 }
 
 const mod24 = (m: number) => ((m % DAY) + DAY) % DAY;

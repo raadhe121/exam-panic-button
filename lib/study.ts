@@ -1,4 +1,5 @@
 import { askAI } from "./ai";
+import { aiLanguageNote, type Lang } from "./i18n";
 import { extractJson } from "./validate";
 
 export interface TopicRef {
@@ -42,10 +43,10 @@ function canonicalTopic(label: string, topics: TopicRef[]): string {
 
 const list = (topics: TopicRef[]) => topics.map((t) => `- ${t.name}${t.subject ? ` (${t.subject})` : ""}`).join("\n");
 
-export async function generateCards(topics: TopicRef[], perTopic: number): Promise<CardDraft[] | null> {
+export async function generateCards(topics: TopicRef[], perTopic: number, lang: Lang = "en"): Promise<CardDraft[] | null> {
   const text = await askAI(
     `You write concise study flashcards. Reply with ONLY JSON: {"cards":[{"topic":string,"front":string,"back":string}]}. ` +
-      `Exactly ${perTopic} cards per topic. "topic" must be one of the given topic names. Front is a short question or term, back is a clear answer under 40 words.`,
+      `Exactly ${perTopic} cards per topic. "topic" must be one of the given topic names. Front is a short question or term, back is a clear answer under 40 words.` + aiLanguageNote(lang),
     `Topics:\n${list(topics)}`,
     4000,
   );
@@ -63,12 +64,12 @@ export async function generateCards(topics: TopicRef[], perTopic: number): Promi
   return out.length ? out : null;
 }
 
-export async function generateQuiz(topics: TopicRef[], perTopic: number): Promise<QuestionDraft[] | null> {
+export async function generateQuiz(topics: TopicRef[], perTopic: number, lang: Lang = "en"): Promise<QuestionDraft[] | null> {
   const text = await askAI(
     `You write multiple-choice exam practice questions. Reply with ONLY JSON: ` +
       `{"questions":[{"topic":string,"question":string,"options":[string,string,string,string],"answer":number,"explanation":string}]}. ` +
       `Exactly ${perTopic} questions per topic. "topic" must be one of the given topic names. Exactly 4 options, "answer" is the 0-based index of the correct one, ` +
-      `explanation is one short sentence.`,
+      `explanation is one short sentence.` + aiLanguageNote(lang),
     `Topics:\n${list(topics)}`,
     5000,
   );

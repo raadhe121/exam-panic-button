@@ -1,4 +1,5 @@
 import type { StoredBlock } from "./storage";
+import { translate } from "./i18n";
 import { loadSettings } from "./settings";
 
 let ctx: AudioContext | null = null;
@@ -44,15 +45,16 @@ export const notificationsSupported = () => typeof window !== "undefined" && "No
 function describe(b: StoredBlock): { title: string; body: string } {
   const mins = Math.round((b.endMs - b.startMs) / 60000);
   const topic = (b.topic ?? "").replace(/ \((?:revisit|[^)]*)\)$/, "");
+  const t = (text: string, vars?: Record<string, string | number>) => translate(loadSettings().lang, text, vars);
   switch (b.type) {
     case "break":
-      return { title: `Break time! ${mins} minutes`, body: b.tip };
+      return { title: t("Break time! {mins} minutes", { mins }), body: t(b.tip) };
     case "study":
-      return { title: `Back to ${topic}`, body: `${mins} minutes. ${b.tip}` };
+      return { title: t("Back to {topic}", { topic }), body: t("{mins} minutes. {tip}", { mins, tip: t(b.tip) }) };
     case "revision":
-      return { title: "Final revision", body: `${mins} minutes. Skim your notes, then stop.` };
+      return { title: t("Final revision"), body: t("{mins} minutes. Skim your notes, then stop.", { mins }) };
     default:
-      return { title: "Time to sleep", body: "Sleep is part of the plan. Your memory needs it." };
+      return { title: t("Time to sleep"), body: t("Sleep is part of the plan. Your memory needs it.") };
   }
 }
 

@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useT } from "@/lib/i18n";
 import { deleteExam, listExams, type ExamRow } from "@/lib/exams";
 import { saveState } from "@/lib/storage";
 
 export default function ExamsPage() {
+  const t = useT();
   const { user, ready, configured } = useAuth();
   const router = useRouter();
   const [exams, setExams] = useState<ExamRow[] | null>(null);
@@ -19,7 +21,8 @@ export default function ExamsPage() {
       router.replace("/login");
       return;
     }
-    listExams().then(setExams, () => setErr("Couldn't load your exams. Please refresh."));
+    listExams().then(setExams, () => setErr(t("Couldn't load your exams. Please refresh.")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per sign-in; `t` is only for the error text
   }, [ready, user, configured, router]);
 
   const open = (e: ExamRow) => {
@@ -32,29 +35,29 @@ export default function ExamsPage() {
   };
 
   const remove = async (e: ExamRow) => {
-    if (!window.confirm(`Delete "${e.name}" and its notes, flashcards and quiz?`)) return;
+    if (!window.confirm(t("Delete \"{name}\" and its notes, flashcards and quiz?", { name: e.name }))) return;
     try {
       await deleteExam(e.id);
       setExams((xs) => xs?.filter((x) => x.id !== e.id) ?? null);
     } catch {
-      setErr("Couldn't delete that exam. Please try again.");
+      setErr(t("Couldn't delete that exam. Please try again."));
     }
   };
 
   return (
     <section className="mx-auto w-full max-w-2xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="page-title"><span aria-hidden="true">🎒 </span>My exams</h1>
-        <button type="button" className="btn btn-primary" onClick={newExam}>New exam</button>
+        <h1 className="page-title"><span aria-hidden="true">🎒 </span>{t("My exams")}</h1>
+        <button type="button" className="btn btn-primary" onClick={newExam}>{t("New exam")}</button>
       </div>
       <p role="alert" className="text-danger empty:hidden">{err}</p>
       {exams === null && !err ? (
-        <p className="text-muted" role="status">Loading...</p>
+        <p className="text-muted" role="status">{t("Loading...")}</p>
       ) : exams?.length === 0 ? (
         <div className="card py-10 text-center">
           <p aria-hidden="true" className="mb-2 text-4xl">🌱</p>
-          <p className="text-xl font-semibold">No saved exams yet</p>
-          <p className="text-muted">Make a plan, then press &quot;Save to my exams&quot;.</p>
+          <p className="text-xl font-semibold">{t("No saved exams yet")}</p>
+          <p className="text-muted">{t("Make a plan, then press \"Save\" under \"Take it with you\".")}</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -63,13 +66,13 @@ export default function ExamsPage() {
               <div>
                 <p className="text-lg font-semibold break-words">{e.name}</p>
                 <p className="text-sm text-muted">
-                  Exam {e.timing.examAt.replace("T", " at ")} · {e.topics.length} topics
+                  {t("Exam {date}", { date: e.timing.examAt.replace("T", " · ") })} · {t("{n} topics", { n: e.topics.length })}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="btn" onClick={() => open(e)}>Open plan</button>
-                <Link href={`/exams/${e.id}`} className="btn">Notes, flashcards, quiz</Link>
-                <button type="button" className="btn" onClick={() => remove(e)} aria-label={`Delete ${e.name}`}>Delete</button>
+                <button type="button" className="btn" onClick={() => open(e)}>{t("Open plan")}</button>
+                <Link href={`/exams/${e.id}`} className="btn">{t("Notes, flashcards, quiz")}</Link>
+                <button type="button" className="btn" onClick={() => remove(e)} aria-label={t("Delete {name}", { name: e.name })}>{t("Delete")}</button>
               </div>
             </li>
           ))}

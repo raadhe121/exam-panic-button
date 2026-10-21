@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { Lang } from "./i18n";
 
 export interface Settings {
   /** Default hours of sleep before the exam. */
@@ -6,9 +7,10 @@ export interface Settings {
   notifications: boolean;
   sound: boolean;
   vibration: boolean;
+  lang: Lang;
 }
 
-export const DEFAULT_SETTINGS: Settings = { sleepHours: 7, notifications: false, sound: true, vibration: true };
+export const DEFAULT_SETTINGS: Settings = { sleepHours: 7, notifications: false, sound: true, vibration: true, lang: "en" };
 
 const KEY = "epb:settings";
 const EVENT = "epb:settings-changed";

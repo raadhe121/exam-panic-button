@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { remainingTopics } from "@/lib/replan";
 import { loadState, type AppState } from "@/lib/storage";
 import { compactDuration } from "@/lib/time";
@@ -13,6 +14,7 @@ function hms(ms: number) {
 }
 
 export default function CountdownPage() {
+  const t = useT();
   const [state, setState] = useState<AppState | null | undefined>(undefined);
   const [now, setNow] = useState<number | null>(null);
   const [full, setFull] = useState(false);
@@ -43,13 +45,13 @@ export default function CountdownPage() {
   const plan = state?.plan;
   const shell = "fixed inset-0 z-40 overflow-auto bg-bg p-6 sm:p-10";
 
-  if (state === undefined || now === null) return <div className={shell}><p className="text-muted" role="status">Loading...</p></div>;
+  if (state === undefined || now === null) return <div className={shell}><p className="text-muted" role="status">{t("Loading...")}</p></div>;
   if (!plan || !plan.examMs) {
     return (
       <div className={`${shell} flex flex-col items-center justify-center gap-4 text-center`}>
-        <h1 className="page-title">No plan to count down yet</h1>
-        <p className="text-muted">Make a plan first, then open this screen and leave it running all night.</p>
-        <Link href="/" className="btn btn-primary">Make a plan</Link>
+        <h1 className="page-title">{t("No plan to count down yet")}</h1>
+        <p className="text-muted">{t("Make a plan first, then open this screen and leave it running all night.")}</p>
+        <Link href="/" className="btn btn-primary">{t("Make a plan")}</Link>
       </div>
     );
   }
@@ -60,29 +62,29 @@ export default function CountdownPage() {
   const cur = plan.blocks.find((b) => now >= b.startMs && now < b.endMs);
   const examMs = plan.examMs;
   const stats: { label: string; value: string; sub?: string; tone?: string }[] = [
-    { label: "Hours until exam", value: examMs > now ? hms(examMs - now) : "0:00:00", sub: examMs > now ? "" : "Good luck. You've got this." },
-    { label: "Hours of sleep left", value: compactDuration(Math.round(sleepLeft / 60000)), tone: "text-sleepink", sub: sleep && now >= sleep.startMs && now < sleep.endMs ? "Sleeping now" : "Protected" },
-    { label: "Topics left", value: String(topicsLeft), sub: topicsLeft === 0 ? "All done" : undefined },
+    { label: t("Hours until exam"), value: examMs > now ? hms(examMs - now) : "0:00:00", sub: examMs > now ? "" : t("Good luck. You've got this.") },
+    { label: t("Hours of sleep left"), value: compactDuration(Math.round(sleepLeft / 60000)), tone: "text-sleepink", sub: sleep && now >= sleep.startMs && now < sleep.endMs ? t("Sleeping now") : t("Protected") },
+    { label: t("Topics left"), value: String(topicsLeft), sub: topicsLeft === 0 ? t("All done") : undefined },
   ];
 
   return (
     <div className={shell}>
       <div className="mx-auto flex min-h-full max-w-6xl flex-col">
         <div className="no-print mb-6 flex items-center justify-between gap-3">
-          <Link href="/" className="btn">Back to my plan</Link>
+          <Link href="/" className="btn">{t("Back to my plan")}</Link>
           <button
             type="button"
             className="btn"
             onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}))}
           >
-            {full ? "Exit full screen" : "Full screen"}
+            {full ? t("Exit full screen") : t("Full screen")}
           </button>
         </div>
 
         <main className="flex flex-1 flex-col justify-center gap-10">
           <div>
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">Exam countdown</p>
-            <h1 className="tnum text-7xl font-extrabold leading-none tracking-tight sm:text-9xl" aria-label="Time until exam">
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">{t("Exam countdown")}</p>
+            <h1 className="tnum text-7xl font-extrabold leading-none tracking-tight sm:text-9xl" aria-label={t("Time until exam")}>
               <span className="gradient-text">{stats[0].value}</span>
             </h1>
             <p className="mt-3 text-xl text-muted">{stats[0].label}{stats[0].sub ? ` · ${stats[0].sub}` : ""}</p>
@@ -100,12 +102,12 @@ export default function CountdownPage() {
           <p className="text-xl text-muted" role="status">
             {cur ? (
               <>
-                Right now: <strong className="text-ink">{cur.type === "sleep" ? "Sleep" : (cur.topic ?? (cur.type === "break" ? "Break" : cur.type))}</strong> until {cur.end}
+                {t("Right now:")} <strong className="text-ink">{cur.type === "sleep" ? t("Sleep") : t(cur.topic ?? (cur.type === "break" ? "Break" : cur.type))}</strong> {t("until {time}", { time: cur.end })}
               </>
             ) : now < plan.blocks[0].startMs ? (
-              `Your plan starts at ${plan.blocks[0].start}.`
+              t("Your plan starts at {time}.", { time: plan.blocks[0].start })
             ) : (
-              "That's the plan done. Rest up."
+              t("That's the plan done. Rest up.")
             )}
           </p>
         </main>

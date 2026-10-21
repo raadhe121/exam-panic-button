@@ -8,6 +8,7 @@ import FlashcardsTab from "@/components/FlashcardsTab";
 import NotesTab from "@/components/NotesTab";
 import QuizTab from "@/components/QuizTab";
 import { getExam, type ExamRow } from "@/lib/exams";
+import { useLang, useT, type TFn } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { inputToMin, toLocalMin } from "@/lib/time";
 import { shortDate } from "@/lib/timing";
@@ -17,15 +18,17 @@ type Tab = (typeof TABS)[number];
 type Counts = Record<Tab, number | null>;
 const TABLE: Record<Tab, string> = { Notes: "notes", Flashcards: "flashcards", Quiz: "quiz_questions" };
 
-function inLabel(mins: number) {
-  if (mins < 60) return `in ${Math.max(1, mins)} min`;
-  if (mins < 48 * 60) return `in ${Math.round(mins / 60)} h`;
-  return `in ${Math.round(mins / 1440)} days`;
+function inLabel(mins: number, t: TFn) {
+  if (mins < 60) return t("in {n} min", { n: Math.max(1, mins) });
+  if (mins < 48 * 60) return t("in {n} h", { n: Math.round(mins / 60) });
+  return t("in {n} days", { n: Math.round(mins / 1440) });
 }
 
 function ExamView() {
   const { id } = useParams<{ id: string }>();
   const { user, ready, configured } = useAuth();
+  const t = useT();
+  const lang = useLang();
   const router = useRouter();
   const [exam, setExam] = useState<ExamRow | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("Notes");
@@ -39,35 +42,35 @@ function ExamView() {
     }
     getExam(id).then(setExam, () => setExam(null));
     const sb = getSupabase()!;
-    for (const t of TABS) {
-      sb.from(TABLE[t]).select("id", { count: "exact", head: true }).eq("exam_id", id).then(({ count }) => {
-        setCounts((c) => ({ ...c, [t]: count ?? 0 }));
+    for (const name of TABS) {
+      sb.from(TABLE[name]).select("id", { count: "exact", head: true }).eq("exam_id", id).then(({ count }) => {
+        setCounts((c) => ({ ...c, [name]: count ?? 0 }));
       });
     }
   }, [ready, user, configured, id, router]);
 
-  const setCount = (t: Tab) => (n: number) => setCounts((c) => (c[t] === n ? c : { ...c, [t]: n }));
+  const setCount = (name: Tab) => (n: number) => setCounts((c) => (c[name] === n ? c : { ...c, [name]: n }));
 
-  if (exam === undefined) return <p className="text-muted" role="status">Loading...</p>;
+  if (exam === undefined) return <p className="text-muted" role="status">{t("Loading...")}</p>;
   if (exam === null) {
     return (
       <section className="mx-auto w-full max-w-2xl">
-        <h1 className="page-title mb-2">We couldn&apos;t find that exam</h1>
-        <Link href="/exams" className="font-semibold underline">Back to My exams</Link>
+        <h1 className="page-title mb-2">{t("We couldn't find that exam")}</h1>
+        <Link href="/exams" className="font-semibold underline">{t("Back to My exams")}</Link>
       </section>
     );
   }
 
   const examMin = inputToMin(exam.timing.examAt);
   const left = examMin !== null ? examMin - toLocalMin(new Date()) : null;
-  const subject = exam.topics.find((t) => t.subject)?.subject;
-  const sub = [subject, examMin !== null ? `Exam ${shortDate(examMin)}, ${exam.timing.examAt.split("T")[1]}` : null].filter(Boolean).join(" · ");
+  const subject = exam.topics.find((tp) => tp.subject)?.subject;
+  const sub = [subject, examMin !== null ? t("Exam {date}", { date: `${shortDate(examMin, lang)}, ${exam.timing.examAt.split("T")[1]}` }) : null].filter(Boolean).join(" · ");
 
   return (
     <section className="mx-auto w-full max-w-2xl">
       <Link href="/exams" className="mb-6 inline-flex min-h-11 items-center gap-1 font-semibold text-muted hover:text-ink">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-        All exams
+        {t("All exams")}
       </Link>
       <div className="mb-6 flex items-end justify-between gap-4">
         <div className="min-w-0">
@@ -75,22 +78,22 @@ function ExamView() {
           {sub && <p className="text-lg text-muted">{sub}</p>}
         </div>
         {left !== null && left > 0 && (
-          <span className="shrink-0 rounded-full border border-nowline bg-now px-4 py-1.5 text-sm font-bold text-accent">{inLabel(left)}</span>
+          <span className="shrink-0 rounded-full border border-nowline bg-now px-4 py-1.5 text-sm font-bold text-accent">{inLabel(left, t)}</span>
         )}
       </div>
-      <div role="tablist" aria-label="Study tools" className="tablist mb-6">
-        {TABS.map((t) => (
+      <div role="tablist" aria-label={t("Study tools")} className="tablist mb-6">
+        {TABS.map((name) => (
           <button
-            key={t}
+            key={name}
             role="tab"
-            id={`tab-${t}`}
-            aria-selected={tab === t}
+            id={`tab-${name}`}
+            aria-selected={tab === name}
             aria-controls="panel"
             className="tab"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(name)}
           >
-            {t}
-            {counts[t] ? <span className="count"> {counts[t]}</span> : null}
+            {t(name)}
+            {counts[name] ? <span className="count"> {counts[name]}</span> : null}
           </button>
         ))}
       </div>
@@ -103,9 +106,14 @@ function ExamView() {
   );
 }
 
+function LoadingFallback() {
+  const t = useT();
+  return <p className="text-muted" role="status">{t("Loading...")}</p>;
+}
+
 export default function ExamPage() {
   return (
-    <Suspense fallback={<p className="text-muted" role="status">Loading...</p>}>
+    <Suspense fallback={<LoadingFallback />}>
       <ExamView />
     </Suspense>
   );

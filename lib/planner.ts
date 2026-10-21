@@ -258,7 +258,12 @@ export function finalize(
   let message = skipped.length
     ? "You can't cover everything tonight. Here's the best use of your time."
     : "You have enough time to cover everything. Take it one block at a time.";
-  if (gentle) message = `We kept this plan gentle: ${message.startsWith("You can't") ? "shorter blocks, more breaks and an easy start. You can't cover everything tonight, and that's okay." : "shorter blocks, more breaks and an easy start. You've got this."}`;
+  if (gentle) {
+    // Whole sentences, so each one can be looked up in the translations.
+    message = skipped.length
+      ? "We kept this plan gentle: shorter blocks, more breaks and an easy start. You can't cover everything tonight, and that's okay."
+      : "We kept this plan gentle: shorter blocks, more breaks and an easy start. You've got this.";
+  }
   if (windowMins < 60) message = "You have less than an hour tonight, so this is a short plan. Do what you can, calmly.";
   return { summary: { studyMinutes, topicsCovered: covered.size, message }, blocks, skipped };
 }

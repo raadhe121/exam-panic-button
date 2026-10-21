@@ -1,4 +1,5 @@
 import { planWithAI } from "@/lib/ai";
+import { parseLang } from "@/lib/i18n";
 import { buildLocalPlan } from "@/lib/planner";
 import { MAX_TOPICS, type PlanInput, type PlanResponse, type Rating } from "@/lib/types";
 
@@ -31,7 +32,8 @@ function parseInput(body: unknown): PlanInput | null {
     });
   }
   return { startMin: s, sleepMin: z, examMin: e, topics, nap: typeof b.nap === "boolean" ? b.nap : undefined,
-    stress: typeof b.stress === "number" && b.stress >= 1 && b.stress <= 5 ? Math.round(b.stress) : undefined };
+    stress: typeof b.stress === "number" && b.stress >= 1 && b.stress <= 5 ? Math.round(b.stress) : undefined,
+    lang: parseLang(b.lang) };
 }
 
 export async function POST(req: Request) {

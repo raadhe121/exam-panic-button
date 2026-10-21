@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { MAX_TOPICS, RATING_LABEL, type Rating, type Topic } from "@/lib/types";
 import Stepper from "./Stepper";
 
@@ -32,6 +33,7 @@ export default function TopicsStep({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [rating, setRating] = useState<Rating>("noidea");
@@ -55,10 +57,14 @@ export default function TopicsStep({
     ]);
     const starred = added.filter((t) => t.important).length;
     setSyllabusMsg(
-      `Added ${added.length} topic${added.length === 1 ? "" : "s"}.` +
-        (starred ? ` We starred ${starred} that usually matter most.` : "") +
-        " Now rate each one below." +
-        (fresh.length > room ? ` We stopped at ${MAX_TOPICS}.` : ""),
+      [
+        added.length === 1 ? t("Added 1 topic.") : t("Added {n} topics.", { n: added.length }),
+        starred ? t("We starred {n} that usually matter most.", { n: starred }) : "",
+        t("Now rate each one below."),
+        fresh.length > room ? t("We stopped at {n}.", { n: MAX_TOPICS }) : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
     );
   };
 
@@ -76,7 +82,7 @@ export default function TopicsStep({
       addImported(j.topics);
       setSyllabus("");
     } catch (e) {
-      setSyllabusMsg(e instanceof Error && e.message ? e.message : "Couldn't read that. Please try again or add topics by hand.");
+      setSyllabusMsg(t(e instanceof Error && e.message ? e.message : "Couldn't read that. Please try again or add topics by hand."));
     }
     setParsing(false);
   };
@@ -95,16 +101,16 @@ export default function TopicsStep({
       if (!res.ok) throw new Error(j.error);
       addImported(j.topics);
     } catch (e) {
-      setSyllabusMsg(e instanceof Error && e.message ? e.message : "Couldn't read that photo. Try a clearer one or type the topics.");
+      setSyllabusMsg(t(e instanceof Error && e.message ? e.message : "Couldn't read that photo. Try a clearer one or type the topics."));
     }
     setScanning(false);
   };
 
   const add = () => {
     const n = name.trim();
-    if (!n) return setError("Type a topic name first.");
-    if (topics.length >= MAX_TOPICS) return setError(`You can add up to ${MAX_TOPICS} topics. Pick the ones that matter most.`);
-    if (topics.some((t) => t.name.toLowerCase() === n.toLowerCase())) return setError("You already added that topic.");
+    if (!n) return setError(t("Type a topic name first."));
+    if (topics.length >= MAX_TOPICS) return setError(t("You can add up to {n} topics. Pick the ones that matter most.", { n: MAX_TOPICS }));
+    if (topics.some((t) => t.name.toLowerCase() === n.toLowerCase())) return setError(t("You already added that topic."));
     onChange([...topics, { id: crypto.randomUUID(), name: n, subject: subject.trim(), rating, starred: false }]);
     setName("");
     setError("");
@@ -116,8 +122,8 @@ export default function TopicsStep({
   return (
     <section>
       <Stepper step={2} />
-      <h1 className="page-title mb-2">What do you need to cover?</h1>
-      <p className="mb-8 text-lg text-muted">Start with the one that worries you most. Up to {MAX_TOPICS}.</p>
+      <h1 className="page-title mb-2">{t("What do you need to cover?")}</h1>
+      <p className="mb-8 text-lg text-muted">{t("Start with the one that worries you most. Up to {n}.", { n: MAX_TOPICS })}</p>
 
       <form
         className="card mb-8 flex flex-col gap-5"
@@ -128,7 +134,7 @@ export default function TopicsStep({
       >
         <div className="grid gap-4 sm:grid-cols-[1.6fr_1fr]">
           <div className="flex flex-col gap-2">
-            <label htmlFor="topic" className="font-semibold">Topic</label>
+            <label htmlFor="topic" className="font-semibold">{t("Topic")}</label>
             <input
               id="topic"
               ref={nameRef}
@@ -138,23 +144,23 @@ export default function TopicsStep({
               onChange={(e) => setName(e.target.value)}
               aria-describedby="topic-err"
               aria-invalid={error ? true : undefined}
-              placeholder="e.g. Newton's laws"
+              placeholder={t("e.g. Newton's laws")}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="subject" className="font-semibold">Subject <span className="font-normal text-muted">(optional)</span></label>
-            <input id="subject" className="input" value={subject} maxLength={40} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Physics" />
+            <label htmlFor="subject" className="font-semibold">{t("Subject")} <span className="font-normal text-muted">{t("(optional)")}</span></label>
+            <input id="subject" className="input" value={subject} maxLength={40} onChange={(e) => setSubject(e.target.value)} placeholder={t("e.g. Physics")} />
           </div>
         </div>
 
         <fieldset>
-          <legend className="mb-2 font-semibold">How well do you know it?</legend>
+          <legend className="mb-2 font-semibold">{t("How well do you know it?")}</legend>
           <div className="grid grid-cols-3 gap-2">
             {RATINGS.map((r) => (
               <label key={r} className={`seg seg-${r} flex-col justify-center text-center`}>
                 <input type="radio" className="sr-only" name="new-rating" checked={rating === r} onChange={() => setRating(r)} />
-                <span>{FRIENDLY[r]}</span>
-                <span className="text-xs font-normal text-muted">{RATING_LABEL[r]}</span>
+                <span>{t(FRIENDLY[r])}</span>
+                <span className="text-xs font-normal text-muted">{t(RATING_LABEL[r])}</span>
               </label>
             ))}
           </div>
@@ -166,18 +172,18 @@ export default function TopicsStep({
           className="btn w-full border-nowline bg-now font-bold text-accent"
           disabled={topics.length >= MAX_TOPICS}
         >
-          + Add topic
+          {t("+ Add topic")}
         </button>
       </form>
 
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Your topics</h2>
+        <h2 className="text-xl font-bold">{t("Your topics")}</h2>
         <div className="flex items-center gap-4 text-sm">
           <button type="button" className="min-h-11 font-semibold text-accent underline" onClick={() => setShowSyllabus((v) => !v)} aria-expanded={showSyllabus}>
-            Paste syllabus
+            {t("Paste syllabus")}
           </button>
           <label className={`inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline ${scanning ? "opacity-60" : ""}`}>
-            {scanning ? "Reading photo..." : "Snap a photo"}
+            {scanning ? t("Reading photo...") : t("Snap a photo")}
             <input
               type="file"
               accept="image/*"
@@ -190,17 +196,17 @@ export default function TopicsStep({
               }}
             />
           </label>
-          <span className="text-muted">{topics.length} of {MAX_TOPICS}</span>
+          <span className="text-muted">{t("{a} of {b}", { a: topics.length, b: MAX_TOPICS })}</span>
         </div>
       </div>
 
       {showSyllabus && (
         <div className="card mb-4 flex flex-col gap-3">
-          <label htmlFor="syllabus" className="text-muted">Paste a syllabus or chapter list and we&apos;ll turn it into topics.</label>
+          <label htmlFor="syllabus" className="text-muted">{t("Paste a syllabus or chapter list and we'll turn it into topics.")}</label>
           <textarea id="syllabus" className="input min-h-32" value={syllabus} maxLength={6000} onChange={(e) => setSyllabus(e.target.value)} />
           <div className="flex justify-end">
             <button type="button" className="btn" disabled={parsing || syllabus.trim().length < 3} onClick={importSyllabus}>
-              {parsing ? "Reading..." : "Turn into topics"}
+              {parsing ? t("Reading...") : t("Turn into topics")}
             </button>
           </div>
         </div>
@@ -209,43 +215,43 @@ export default function TopicsStep({
 
       {topics.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line px-5 py-10 text-center text-muted">
-          <p className="mb-1 text-lg font-semibold text-ink">Add your first topic</p>
-          Nothing yet. Add one above, snap a photo of your notes, or{" "}
-          <button type="button" className="font-semibold text-accent underline" onClick={() => setShowSyllabus(true)}>paste your syllabus</button>.
+          <p className="mb-1 text-lg font-semibold text-ink">{t("Add your first topic")}</p>
+          {t("Nothing yet. Add one above, snap a photo of your notes, or")}{" "}
+          <button type="button" className="font-semibold text-accent underline" onClick={() => setShowSyllabus(true)}>{t("paste your syllabus")}</button>.
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
-          {topics.map((t) => (
-            <li key={t.id} className="card flex flex-col gap-3">
+          {topics.map((tp) => (
+            <li key={tp.id} className="card flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-lg font-semibold break-words">{t.name}</p>
-                  {t.subject && <p className="text-sm text-muted">{t.subject}</p>}
+                  <p className="text-lg font-semibold break-words">{tp.name}</p>
+                  {tp.subject && <p className="text-sm text-muted">{tp.subject}</p>}
                 </div>
-                <button type="button" className="btn" onClick={() => onChange(topics.filter((x) => x.id !== t.id))} aria-label={`Remove ${t.name}`}>
-                  Remove
+                <button type="button" className="btn" onClick={() => onChange(topics.filter((x) => x.id !== tp.id))} aria-label={t("Remove {name}", { name: tp.name })}>
+                  {t("Remove")}
                 </button>
               </div>
               <fieldset className="flex flex-wrap gap-2">
-                <legend className="sr-only">How well do you know {t.name}?</legend>
+                <legend className="sr-only">{t("How well do you know {name}?", { name: tp.name })}</legend>
                 {RATINGS.map((r) => (
                   <label key={r} className={`seg seg-${r}`}>
                     <input
                       type="radio"
                       className="sr-only"
-                      name={`rating-${t.id}`}
-                      checked={t.rating === r}
-                      onChange={() => set(t.id, { rating: r })}
+                      name={`rating-${tp.id}`}
+                      checked={tp.rating === r}
+                      onChange={() => set(tp.id, { rating: r })}
                     />
                     <span className={COLOR[r]} aria-hidden="true">{MARK[r]}&nbsp;</span>
-                    {RATING_LABEL[r]}
+                    {t(RATING_LABEL[r])}
                   </label>
                 ))}
               </fieldset>
               <label className="seg self-start">
-                <input type="checkbox" className="sr-only" checked={t.starred} onChange={(e) => set(t.id, { starred: e.target.checked })} />
-                <span aria-hidden="true">{t.starred ? "★" : "☆"}&nbsp;</span>
-                Important for exam
+                <input type="checkbox" className="sr-only" checked={tp.starred} onChange={(e) => set(tp.id, { starred: e.target.checked })} />
+                <span aria-hidden="true">{tp.starred ? "★" : "☆"}&nbsp;</span>
+                {t("Important for exam")}
               </label>
             </li>
           ))}
@@ -253,12 +259,12 @@ export default function TopicsStep({
       )}
 
       <div className="mt-8 flex items-start justify-between gap-3">
-        <button type="button" className="btn" onClick={onBack}>Back</button>
+        <button type="button" className="btn" onClick={onBack}>{t("Back")}</button>
         <div className="flex flex-col items-end gap-1">
           <button type="button" className="btn btn-primary" disabled={topics.length === 0} onClick={onNext}>
-            Next: review
+            {t("Next: review")}
           </button>
-          {topics.length === 0 && <p className="text-sm text-muted">Add at least one topic</p>}
+          {topics.length === 0 && <p className="text-sm text-muted">{t("Add at least one topic")}</p>}
         </div>
       </div>
     </section>

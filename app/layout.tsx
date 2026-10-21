@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import LangSync from "@/components/LangSync";
 import PwaSetup from "@/components/PwaSetup";
 import AuthProvider from "@/components/AuthProvider";
 import SiteHeader from "@/components/SiteHeader";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <PwaSetup />
+        <LangSync />
         <AuthProvider>
           <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-6 sm:px-8 sm:py-10">
             <SiteHeader />

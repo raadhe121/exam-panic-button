@@ -1,4 +1,5 @@
 import { askAI } from "@/lib/ai";
+import { aiLanguageNote, parseLang } from "@/lib/i18n";
 import { extractJson } from "@/lib/validate";
 
 export const maxDuration = 30;
@@ -8,12 +9,12 @@ Reply with ONLY JSON: {"questions":[{"question":string,"options":[string,string,
 Exactly 2 multiple-choice questions, 4 options each, "answer" is the 0-based index of the correct option, explanation is one short sentence. Keep them fair and basic: core ideas, not tricks.`;
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => null)) as { topic?: unknown; subject?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { topic?: unknown; subject?: unknown; lang?: unknown } | null;
   const topic = typeof body?.topic === "string" ? body.topic.trim().slice(0, 80) : "";
   const subject = typeof body?.subject === "string" ? body.subject.trim().slice(0, 40) : "";
   if (!topic) return Response.json({ error: "Missing topic." }, { status: 400 });
 
-  const text = await askAI(SYSTEM, `Topic: ${topic}${subject ? ` (${subject})` : ""}`, 1200);
+  const text = await askAI(SYSTEM + aiLanguageNote(parseLang(body?.lang)), `Topic: ${topic}${subject ? ` (${subject})` : ""}`, 1200);
   const raw = (extractJson(text ?? "") as { questions?: unknown[] } | null)?.questions;
   const questions = (Array.isArray(raw) ? raw : [])
     .map((q) => {

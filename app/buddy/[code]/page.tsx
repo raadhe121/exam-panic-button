@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { fetchShared, type SharedPlan } from "@/lib/buddy";
+import { useT } from "@/lib/i18n";
 import { supabaseConfigured } from "@/lib/supabase";
 import { compactDuration } from "@/lib/time";
 
@@ -16,6 +17,7 @@ function countdown(ms: number) {
 }
 
 function BuddyView() {
+  const t = useT();
   const { code } = useParams<{ code: string }>();
   const [data, setData] = useState<SharedPlan | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
@@ -27,7 +29,7 @@ function BuddyView() {
     const load = () =>
       fetchShared(code).then(
         (d) => alive && (setData(d), setErr("")),
-        () => alive && setErr("Can't reach the plan right now. Retrying..."),
+        () => alive && setErr(t("Can't reach the plan right now. Retrying...")),
       );
     load();
     const poll = setInterval(load, 3000);
@@ -37,18 +39,19 @@ function BuddyView() {
       clearInterval(poll);
       clearInterval(tick);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- poll per share code; `t` is only for the retry text
   }, [code]);
 
   const wrap = "mx-auto w-full max-w-2xl";
-  if (!supabaseConfigured) return <section className={wrap}><h1 className="page-title">Sharing isn&apos;t set up on this site</h1></section>;
-  if (data === undefined) return <section className={wrap}><p className="text-muted" role="status">{err || "Loading..."}</p></section>;
+  if (!supabaseConfigured) return <section className={wrap}><h1 className="page-title">{t("Sharing isn't set up on this site")}</h1></section>;
+  if (data === undefined) return <section className={wrap}><p className="text-muted" role="status">{err || t("Loading...")}</p></section>;
   if (data === null) {
     return (
       <section className={`${wrap} text-center`}>
         <p aria-hidden="true" className="mb-3 text-5xl">🔗</p>
-        <h1 className="page-title mb-2">This link isn&apos;t active</h1>
-        <p className="mb-6 text-muted">Your friend may have stopped sharing. Ask them for a new link.</p>
-        <Link href="/" className="btn btn-primary">Make my own plan</Link>
+        <h1 className="page-title mb-2">{t("This link isn't active")}</h1>
+        <p className="mb-6 text-muted">{t("Your friend may have stopped sharing. Ask them for a new link.")}</p>
+        <Link href="/" className="btn btn-primary">{t("Make my own plan")}</Link>
       </section>
     );
   }
@@ -65,15 +68,15 @@ function BuddyView() {
     <section className={wrap}>
       <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted">
         <span className="dot animate-pulse" style={{ background: "var(--dot-study)", width: "0.5rem", height: "0.5rem" }} aria-hidden="true" />
-        Live · updated {ago < 5 ? "just now" : `${ago}s ago`}
+        {ago < 5 ? t("Live · updated just now") : t("Live · updated {n}s ago", { n: ago })}
       </p>
-      <h1 className="page-title mb-2">Studying together</h1>
-      <p className="mb-6 text-lg text-muted">You&apos;re following <strong className="text-ink">{data.title}</strong>. Ticks appear as your friend finishes each block.</p>
+      <h1 className="page-title mb-2">{t("Studying together")}</h1>
+      <p className="mb-6 text-lg text-muted">{t("You're following")} <strong className="text-ink">{data.title}</strong>. {t("Ticks appear as your friend finishes each block.")}</p>
 
       <div className="card mb-6">
         <div className="mb-2 flex justify-between font-semibold">
-          <span id="buddy-prog">Their progress</span>
-          <span>{doneCount} of {checkable.length} done</span>
+          <span id="buddy-prog">{t("Their progress")}</span>
+          <span>{t("{a} of {b} done", { a: doneCount, b: checkable.length })}</span>
         </div>
         <div role="progressbar" aria-labelledby="buddy-prog" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="h-2 overflow-hidden rounded-full bg-surface2">
           <div className="h-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
@@ -82,9 +85,9 @@ function BuddyView() {
 
       {cur && (
         <div className="mb-6 rounded-[1.5rem] border border-nowline bg-now p-6" aria-current="step">
-          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-accent">Right now</p>
-          <p className="text-2xl font-bold break-words">{cur.b.topic ?? (cur.b.type === "break" ? "Break" : cur.b.type)}</p>
-          <p className="tnum text-4xl font-bold">{countdown(cur.b.endMs - now)} <span className="text-lg font-normal text-muted">left</span></p>
+          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-accent">{t("Right now")}</p>
+          <p className="text-2xl font-bold break-words">{t(cur.b.topic ?? (cur.b.type === "break" ? "Break" : cur.b.type))}</p>
+          <p className="tnum text-4xl font-bold">{countdown(cur.b.endMs - now)} <span className="text-lg font-normal text-muted">{t("left")}</span></p>
         </div>
       )}
 
@@ -96,13 +99,13 @@ function BuddyView() {
               <span className="flex justify-center pt-2"><span className="dot" style={{ background: DOT[b.type] }} aria-hidden="true" /></span>
               <div className="min-w-0">
                 <p className={`font-semibold break-words ${done[i] ? "line-through opacity-70" : ""}`}>
-                  {b.type === "sleep" ? "Sleep" : (b.topic ?? "Break")}
+                  {b.type === "sleep" ? t("Sleep") : t(b.topic ?? "Break")}
                   <span className="ml-2 text-sm font-normal text-muted">{compactDuration(Math.round((b.endMs - b.startMs) / 60000))}</span>
                 </p>
-                <p className="text-muted">{b.tip}</p>
+                <p className="text-muted">{t(b.tip)}</p>
               </div>
               {b.type !== "sleep" && (
-                <span className={`pt-1 text-lg ${done[i] ? "text-good" : "text-muted"}`} role="img" aria-label={done[i] ? "Done" : "Not done yet"}>
+                <span className={`pt-1 text-lg ${done[i] ? "text-good" : "text-muted"}`} role="img" aria-label={done[i] ? t("Done") : t("Not done yet")}>
                   {done[i] ? "✓" : "○"}
                 </span>
               )}
@@ -110,14 +113,19 @@ function BuddyView() {
           ))}
         </ol>
       </div>
-      <p className="mt-6 text-center text-muted">Studying alongside? Open a video call and keep this page next to it.</p>
+      <p className="mt-6 text-center text-muted">{t("Studying alongside? Open a video call and keep this page next to it.")}</p>
     </section>
   );
 }
 
+function LoadingFallback() {
+  const t = useT();
+  return <p className="text-muted" role="status">{t("Loading...")}</p>;
+}
+
 export default function BuddyPage() {
   return (
-    <Suspense fallback={<p className="text-muted" role="status">Loading...</p>}>
+    <Suspense fallback={<LoadingFallback />}>
       <BuddyView />
     </Suspense>
   );

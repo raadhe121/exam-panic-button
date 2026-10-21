@@ -1,3 +1,5 @@
+import type { Lang } from "./i18n";
+
 export type Rating = "know" | "shaky" | "noidea";
 
 export interface Topic {
@@ -18,6 +20,8 @@ export interface PlanInput {
   nap?: boolean;
   /** 1 (calm) to 5 (panicking). 4 and 5 give a gentler plan. */
   stress?: number;
+  /** Language for AI-written text (tips and the summary message). The rule-based planner stays English and is translated on screen. */
+  lang?: Lang;
 }
 
 export type BlockType = "study" | "break" | "revision" | "sleep";

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { accessToken, type ExamRow } from "@/lib/exams";
+import { useLang, useT } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "./AuthProvider";
 
@@ -16,6 +17,8 @@ interface Question {
 
 export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n: number) => void }) {
   const { user } = useAuth();
+  const t = useT();
+  const lang = useLang();
   const sb = getSupabase()!;
   const [qs, setQs] = useState<Question[] | null>(null);
   const [i, setI] = useState(0);
@@ -27,9 +30,10 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
 
   useEffect(() => {
     sb.from("quiz_questions").select("id,topic,question,options,answer,explanation").eq("exam_id", exam.id).order("created_at").then(({ data, error }) => {
-      if (error) setErr("Couldn't load the quiz.");
+      if (error) setErr(t("Couldn't load the quiz."));
       else setQs(data as Question[]);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per exam; `t` is only for the error text
   }, [sb, exam.id]);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${await accessToken()}` },
-        body: JSON.stringify({ topics: exam.topics.map((t) => ({ name: t.name, subject: t.subject })) }),
+        body: JSON.stringify({ topics: exam.topics.map((tp) => ({ name: tp.name, subject: tp.subject })), lang }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
@@ -52,7 +56,7 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
       if (error) throw error;
       setQs((c) => [...(c ?? []), ...(data as Question[])]);
     } catch (e) {
-      setErr(e instanceof Error && e.message ? e.message : "Couldn't make a quiz right now.");
+      setErr(t(e instanceof Error && e.message ? e.message : "Couldn't make a quiz right now."));
     }
     setBusy(false);
   };
@@ -68,25 +72,25 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
 
   return (
     <div className="flex flex-col gap-4">
-      {qs === null ? <p className="text-muted" role="status">Loading...</p> : qs.length === 0 ? (
+      {qs === null ? <p className="text-muted" role="status">{t("Loading...")}</p> : qs.length === 0 ? (
         <div className="card py-10 text-center">
           <p aria-hidden="true" className="mb-2 text-4xl">🧠</p>
-          <p className="text-xl font-semibold">No quiz yet</p>
-          <p className="mb-3 text-muted">AI will write a few practice questions for each topic.</p>
+          <p className="text-xl font-semibold">{t("No quiz yet")}</p>
+          <p className="mb-3 text-muted">{t("AI will write a few practice questions for each topic.")}</p>
           <button type="button" className="btn btn-primary" onClick={generate} disabled={busy}>
-            {busy ? "Writing questions..." : "Make a quiz with AI"}
+            {busy ? t("Writing questions...") : t("Make a quiz with AI")}
           </button>
         </div>
       ) : finished ? (
         <div className="card py-10 text-center">
           <p aria-hidden="true" className="mb-2 text-4xl">🎉</p>
-          <p className="text-2xl font-bold">You got {score} of {qs.length}</p>
-          <p className="mb-3 text-muted">Every round makes the next one easier.</p>
-          <button type="button" className="btn btn-primary" onClick={restart}>Try again</button>
+          <p className="text-2xl font-bold">{t("You got {a} of {b}", { a: score, b: qs.length })}</p>
+          <p className="mb-3 text-muted">{t("Every round makes the next one easier.")}</p>
+          <button type="button" className="btn btn-primary" onClick={restart}>{t("Try again")}</button>
         </div>
       ) : q && (
         <div className="card flex flex-col gap-3">
-          <p className="text-sm text-muted">Question {i + 1} of {qs.length}{q.topic ? ` · ${q.topic}` : ""}</p>
+          <p className="text-sm text-muted">{t("Question {a} of {b}", { a: i + 1, b: qs.length })}{q.topic ? ` · ${q.topic}` : ""}</p>
           <fieldset>
             <legend className="mb-3 text-lg font-semibold">{q.question}</legend>
             <div className="flex flex-col gap-2">
@@ -107,8 +111,8 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
                     />
                     <span>
                       {o}
-                      {state === "correct" && <strong className="text-good"> (correct)</strong>}
-                      {state === "wrong" && <strong className="text-bad"> (not quite)</strong>}
+                      {state === "correct" && <strong className="text-good"> {t("(correct)")}</strong>}
+                      {state === "wrong" && <strong className="text-bad"> {t("(not quite)")}</strong>}
                     </span>
                   </label>
                 );
@@ -124,7 +128,7 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
                   className="btn btn-primary"
                   onClick={() => (i + 1 >= qs.length ? setFinished(true) : (setI(i + 1), setPicked(null)))}
                 >
-                  {i + 1 >= qs.length ? "See my score" : "Next question"}
+                  {i + 1 >= qs.length ? t("See my score") : t("Next question")}
                 </button>
               </div>
             </>
@@ -132,7 +136,7 @@ export default function QuizTab({ exam, onCount }: { exam: ExamRow; onCount?: (n
         </div>
       )}
       {qs && qs.length > 0 && !finished && (
-        <button type="button" className="btn self-start" onClick={generate} disabled={busy}>{busy ? "Writing questions..." : "Add more questions with AI"}</button>
+        <button type="button" className="btn self-start" onClick={generate} disabled={busy}>{busy ? t("Writing questions...") : t("Add more questions with AI")}</button>
       )}
       <p role="alert" className="text-danger empty:hidden">{err}</p>
     </div>

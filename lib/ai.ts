@@ -1,3 +1,4 @@
+import { aiLanguageNote } from "./i18n";
 import { fmt, roundDown5, roundUp5 } from "./time";
 import { extractJson, repairPlan, validatePlan } from "./validate";
 import { isGentle, napMode } from "./planner";
@@ -29,7 +30,7 @@ ${nap ? "Nap" : "Sleep"} time (sleep block starts here): ${fmt(roundDown5(input.
 Sleep block ends at: ${fmt(nap ? Math.min(roundDown5(input.sleepMin) + 30, input.examMin) : input.examMin - roundDown5(input.sleepMin) > 60 ? input.examMin - 45 : input.examMin)}
 Exam time: ${fmt(input.examMin)}
 ${nap ? "The exam is under 7 hours away, so the sleep block is a short 30 minute nap (topic \"Short nap\").\n" : ""}${isGentle(input.stress) ? `GENTLE MODE: the student is very stressed (${input.stress}/5).\n` : ""}Topics:
-${topics}`;
+${topics}${aiLanguageNote(input.lang ?? "en")}`;
 }
 
 async function viaGroq(key: string, system: string, user: string, maxTokens: number, retried = false): Promise<string | null> {

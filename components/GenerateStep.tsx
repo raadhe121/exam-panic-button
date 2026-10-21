@@ -1,4 +1,7 @@
+"use client";
+
 import { useEffect, useState } from "react";
+import { useLang, useT } from "@/lib/i18n";
 import type { AppState } from "@/lib/storage";
 import { checkTiming, clockOf, dayLabel, shortDate } from "@/lib/timing";
 import { durationLabel, inputToMin, toLocalMin } from "@/lib/time";
@@ -19,6 +22,8 @@ export default function GenerateStep({
   onBack: () => void;
   onBuild: () => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const [line, setLine] = useState(0);
   useEffect(() => {
     if (!building) return;
@@ -37,11 +42,11 @@ export default function GenerateStep({
   const studyPct = Math.min(100, Math.max(0, ((sleep - start) / total) * 100));
 
   const rows: [string, React.ReactNode][] = [
-    ["Exam", `${shortDate(exam)} · ${clockOf(exam)}`],
-    ["Start studying", `${dayLabel(start, nowMin)} · ${clockOf(start)}`],
-    [nap ? "Nap" : "Sleep", `${dayLabel(sleep, nowMin, true)} · ${clockOf(sleep)}`],
+    [t("Exam"), `${shortDate(exam, lang)} · ${clockOf(exam)}`],
+    [t("Start studying"), `${dayLabel(start, nowMin, false, lang)} · ${clockOf(start)}`],
+    [nap ? t("Nap") : t("Sleep"), `${dayLabel(sleep, nowMin, true, lang)} · ${clockOf(sleep)}`],
     [
-      "Topics",
+      t("Topics"),
       state.topics.map((t, i) => (
         <span key={t.id}>
           {i > 0 && ", "}
@@ -55,13 +60,13 @@ export default function GenerateStep({
   return (
     <section>
       <Stepper step={3} />
-      <h1 className="page-title mb-2">Ready when you are.</h1>
-      <p className="mb-8 text-lg text-muted">Check this looks right, then we&apos;ll build your night.</p>
+      <h1 className="page-title mb-2">{t("Ready when you are.")}</h1>
+      <p className="mb-8 text-lg text-muted">{t("Check this looks right, then we'll build your night.")}</p>
 
       <div className="card mb-5">
         <div
           role="img"
-          aria-label={`Study ${durationLabel(sleep - start)}, then ${nap ? "nap" : "sleep"} ${durationLabel(exam - sleep)}`}
+          aria-label={t("Study {a}, then {kind} {b}", { a: durationLabel(sleep - start), kind: nap ? t("nap") : t("sleep"), b: durationLabel(exam - sleep) })}
           className="flex h-3 overflow-hidden rounded-full"
         >
           <div className="h-full" style={{ width: `${studyPct}%`, background: "var(--dot-study)" }} />
@@ -73,8 +78,8 @@ export default function GenerateStep({
           <span className="absolute right-0">{clockOf(exam)}</span>
         </div>
         <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-study)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />Study · {durationLabel(sleep - start)}</li>
-          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-sleep)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />{nap ? "Nap" : "Sleep"} · {durationLabel(exam - sleep)}</li>
+          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-study)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />{t("Study")} · {durationLabel(sleep - start)}</li>
+          <li className="flex items-center gap-2"><span className="dot" style={{ background: "var(--dot-sleep)", width: "0.625rem", height: "0.625rem" }} aria-hidden="true" />{nap ? t("Nap") : t("Sleep")} · {durationLabel(exam - sleep)}</li>
         </ul>
       </div>
 
@@ -92,17 +97,17 @@ export default function GenerateStep({
           <div role="status" className="flex items-center gap-3">
             <span className="spinner" aria-hidden="true" />
             <div>
-              <p className="font-semibold">Making your plan...</p>
-              <p className="text-sm text-muted">{LOADING_LINES[line]}</p>
+              <p className="font-semibold">{t("Making your plan...")}</p>
+              <p className="text-sm text-muted">{t(LOADING_LINES[line])}</p>
             </div>
           </div>
         )}
-        {error && <p role="alert" className="text-danger">{error}</p>}
+        {error && <p role="alert" className="text-danger">{t(error)}</p>}
       </div>
       <div className="flex justify-between gap-3">
-        <button type="button" className="btn" onClick={onBack} disabled={building}>Back</button>
+        <button type="button" className="btn" onClick={onBack} disabled={building}>{t("Back")}</button>
         <button type="button" className="btn btn-primary" onClick={onBuild} disabled={building}>
-          {building ? "Making your plan..." : "Build my plan"}
+          {building ? t("Making your plan...") : t("Build my plan")}
         </button>
       </div>
     </section>

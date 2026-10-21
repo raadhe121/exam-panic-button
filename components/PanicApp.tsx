@@ -8,6 +8,7 @@ import { checkTiming, defaultTiming } from "@/lib/timing";
 import { fromLocalMin, inputToMin, resolveBlocks, roundUp5, toLocalMin } from "@/lib/time";
 import { upsertHistory } from "@/lib/history";
 import { syncShare } from "@/lib/buddy";
+import { useLang, useT } from "@/lib/i18n";
 import { remainingTopics } from "@/lib/replan";
 import { addRevisit } from "@/lib/revisit";
 import type { PlanInput, PlanResponse, PlanResult } from "@/lib/types";
@@ -42,6 +43,8 @@ function toStored(res: PlanResponse, input: PlanInput, nap: boolean): StoredPlan
 }
 
 export default function PanicApp() {
+  const t = useT();
+  const lang = useLang();
   const [state, setState] = useState<AppState | null>(null);
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState("");
@@ -118,7 +121,7 @@ export default function PanicApp() {
       const r = await fetch("/api/plan", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...input, nap }),
+        body: JSON.stringify({ ...input, nap, lang }),
       });
       if (r.ok) res = (await r.json()) as PlanResponse;
     } catch {
@@ -150,7 +153,7 @@ export default function PanicApp() {
     await minWait;
     setBuilding(false);
     if (!stored) {
-      setBuildError("Something went wrong while making your plan. Please try again.");
+      setBuildError(t("Something went wrong while making your plan. Please try again."));
       return;
     }
     patch({ plan: stored, stage: "plan" });
@@ -166,19 +169,19 @@ export default function PanicApp() {
     const base = timingInput();
     setReplanMsg("");
     if (base.sleepMin - nowMin < 20) {
-      setReplanMsg("There's hardly any time left before sleep. Do your final quick revision, then rest. That's the best use of tonight.");
+      setReplanMsg(t("There's hardly any time left before sleep. Do your final quick revision, then rest. That's the best use of tonight."));
       return;
     }
     const left = remainingTopics(state.topics, state.plan.blocks, state.plan.done);
     if (!left.length) {
-      setReplanMsg("You've finished every topic. Nice work. Do the final quick revision, then rest.");
+      setReplanMsg(t("You've finished every topic. Nice work. Do the final quick revision, then rest."));
       return;
     }
     setReplanning(true);
     const stored = await generate({ ...base, startMin: nowMin, topics: left }, state.plan.nap);
     setReplanning(false);
     if (!stored) {
-      setReplanMsg("Something went wrong while re-planning. Please try again.");
+      setReplanMsg(t("Something went wrong while re-planning. Please try again."));
       return;
     }
     stored.replannedAt = Date.now();
@@ -188,13 +191,13 @@ export default function PanicApp() {
 
   const quickCheckResult = (topicName: string, wrong: number) => {
     if (wrong === 0 || !state?.plan) return;
-    const topics = state.topics.map((t) => (t.name === topicName && t.rating === "know" ? { ...t, rating: "shaky" as const } : t));
+    const topics = state.topics.map((tp) => (tp.name === topicName && tp.rating === "know" ? { ...tp, rating: "shaky" as const } : tp));
     const next = addRevisit(state.plan, topicName, Date.now());
     patch({ topics, ...(next ? { plan: next } : {}) });
     setReplanMsg(
       next
-        ? `Added a 10-minute revisit for ${topicName} later tonight.`
-        : `${topicName} is marked shaky. There's no spare break tonight, so give it extra attention in your final revision.`,
+        ? t("Added a 10-minute revisit for {topic} later tonight.", { topic: topicName })
+        : t("{topic} is marked shaky. There's no spare break tonight, so give it extra attention in your final revision.", { topic: topicName }),
     );
   };
 
@@ -207,7 +210,7 @@ export default function PanicApp() {
     <div className={state?.stage === "plan" && state.plan ? "w-full" : "mx-auto w-full max-w-2xl"}>
         {onboard && state?.stage === "landing" && <Onboarding onDone={() => setOnboard(false)} />}
         {!state ? (
-          <p className="text-muted" role="status">Loading...</p>
+          <p className="text-muted" role="status">{t("Loading...")}</p>
         ) : state.stage === "landing" ? (
           <Landing onStart={() => patch({ stage: "timing", timing: state.plan ? state.timing : defaultTiming(toLocalMin(new Date())) })} />
         ) : state.stage === "timing" ? (
