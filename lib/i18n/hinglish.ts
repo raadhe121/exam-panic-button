@@ -533,4 +533,7 @@ export const hinglish: Record<string, string> = {
   "Not enough time tonight. Skim it if you have a spare minute.": "Aaj raat time kaafi nahi hai. Ek minute free mile toh skim kar lo.",
   "Not enough time tonight.": "Aaj raat time kaafi nahi hai.",
   "You've got this.": "Tum kar loge.",
+  "{n} min": "{n} min",
+  "{n} h": "{n} h",
+  "{h} h {m} min": "{h} h {m} min",
 };

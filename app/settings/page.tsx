@@ -5,7 +5,8 @@ import { useT } from "@/lib/i18n-client";
 import { LANGS, parseLang } from "@/lib/i18n";
 import { askNotificationPermission, chime, notificationsSupported, unlockAudio } from "@/lib/alerts";
 import { isIos, isStandalone, promptInstall, useCanInstall } from "@/lib/pwa";
-import { saveSettings, useSettings } from "@/lib/settings";
+import { saveSettings } from "@/lib/settings";
+import { useSettings } from "@/lib/use-settings";
 import { applyTheme } from "@/lib/theme";
 
 function Switch({ id, label, hint, checked, onChange }: { id: string; label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {

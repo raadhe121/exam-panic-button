@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { translate, type Lang, type TFn } from "./i18n";
-import { useSettings } from "./settings";
+import { useSettings } from "./use-settings";
 
 /** React hook: the chosen language id (for date formats and the like). */
 export function useLang(): Lang {

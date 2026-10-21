@@ -2,7 +2,8 @@
 
 import { useT } from "@/lib/i18n-client";
 import { LANGS, parseLang } from "@/lib/i18n";
-import { saveSettings, useSettings } from "@/lib/settings";
+import { saveSettings } from "@/lib/settings";
+import { useSettings } from "@/lib/use-settings";
 
 /** Compact language switch for the header: English, Hindi, Hinglish. */
 export default function LanguagePicker() {

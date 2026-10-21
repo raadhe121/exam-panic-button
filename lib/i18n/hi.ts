@@ -533,4 +533,7 @@ export const hi: Record<string, string> = {
   "Not enough time tonight. Skim it if you have a spare minute.": "आज रात समय पर्याप्त नहीं है। एक मिनट खाली मिले तो नज़र दौड़ा लें।",
   "Not enough time tonight.": "आज रात समय पर्याप्त नहीं है।",
   "You've got this.": "आप कर लेंगे।",
+  "{n} min": "{n} मिनट",
+  "{n} h": "{n} घंटे",
+  "{h} h {m} min": "{h} घंटे {m} मिनट",
 };

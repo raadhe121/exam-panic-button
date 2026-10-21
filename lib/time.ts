@@ -1,3 +1,6 @@
+import { translate, type Lang } from "./i18n";
+import { loadSettings } from "./settings";
+
 export const DAY = 1440;
 
 export const mod = (n: number, m: number) => ((n % m) + m) % m;
@@ -41,11 +44,11 @@ export function minToInput(m: number) {
   return new Date(m * 60000).toISOString().slice(0, 16);
 }
 
-export function durationLabel(mins: number) {
+export function durationLabel(mins: number, lang: Lang = loadSettings().lang) {
   const h = Math.floor(mins / 60);
   const r = mins % 60;
-  if (h === 0) return `${r} min`;
-  return r === 0 ? `${h} h` : `${h} h ${r} min`;
+  if (h === 0) return translate(lang, "{n} min", { n: r });
+  return r === 0 ? translate(lang, "{n} h", { n: h }) : translate(lang, "{h} h {m} min", { h, m: r });
 }
 
 /**

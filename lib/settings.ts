@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from "react";
 import type { Lang } from "./i18n";
 
 export interface Settings {
@@ -13,7 +12,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = { sleepHours: 7, notifications: false, sound: true, vibration: true, lang: "en" };
 
 const KEY = "epb:settings";
-const EVENT = "epb:settings-changed";
+export const SETTINGS_EVENT = "epb:settings-changed";
 let cache: Settings = DEFAULT_SETTINGS;
 let loaded = false;
 
@@ -37,14 +36,5 @@ export function saveSettings(patch: Partial<Settings>) {
   } catch {
     /* storage unavailable: settings last for this visit only */
   }
-  window.dispatchEvent(new Event(EVENT));
-}
-
-function subscribe(cb: () => void) {
-  window.addEventListener(EVENT, cb);
-  return () => window.removeEventListener(EVENT, cb);
-}
-
-export function useSettings(): Settings {
-  return useSyncExternalStore(subscribe, loadSettings, () => DEFAULT_SETTINGS);
+  window.dispatchEvent(new Event(SETTINGS_EVENT));
 }

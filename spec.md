@@ -77,3 +77,11 @@ Labelled inputs, radio groups for ratings with text labels, `aria-current` on th
 
 ## Deploy
 Push to GitHub, import in Vercel, then set the variables in `.env.example` (all optional; features turn on as their variables are added). Run `supabase/schema.sql` in the Supabase SQL editor.
+
+## Languages (English, Hindi, Hinglish)
+
+- `lib/i18n.ts` holds the `Lang` type, `useT()` and `translate()`. The English text itself is the key; `lib/i18n/hi.ts` (Devanagari) and `lib/i18n/hinglish.ts` (Hindi in Roman letters) map it to translations. A missing entry falls back to English, so a gap never breaks a screen. `{name}` placeholders are filled from a `vars` object.
+- The choice is stored in `epb:settings` (`lang`) and switched from the header or Settings. `<html lang>` follows it (`LangSync`).
+- The rule-based planner and its validators stay English. Stored plans, tips and error strings are translated when they are shown, so switching language also updates a plan you already built.
+- AI routes (`/api/plan`, `quickcheck`, `explain`, `flashcards`, `quiz`) take a `lang` field. `aiLanguageNote()` adds an instruction to the prompt. Topic names and fixed labels are kept as given so validation and matching keep working. AI-written text is stored in the language it was generated in.
+- Dates use `hi-IN` for Hindi; weekday names stay English for Hinglish.

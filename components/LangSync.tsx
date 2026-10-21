@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { applyHtmlLang } from "@/lib/theme";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@/lib/use-settings";
 
 /** Keeps <html lang> in step with the chosen language (for screen readers and hyphenation). */
 export default function LangSync() {

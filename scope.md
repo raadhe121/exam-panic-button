@@ -18,6 +18,7 @@
 - AI-generated or hand-written flashcards and multiple-choice quizzes per exam
 - Calendar export (.ics download, works without an account)
 - Push reminders before each block (web push, needs sign-in)
+- Three languages (English, Hindi, Hinglish): a switch in the header and Settings; the whole interface changes, and AI tips, explanations, quizzes and flashcards are written in the chosen language
 - "I'm panicking" 60-second breathing exercise, "I'm behind" re-plan from now, syllabus paste or photo to topics (AI also stars the ones that usually matter most; rule-based fallback for text), "Explain it fast" (5 bullets plus a memory trick), calm coach lines that follow your progress and panic score, morning-of 15-minute checklist
 - Exam-day countdown screen, AI quick check after each study block (wrong answers mark the topic shaky and add a 10-minute revisit), study buddy live link, focus mode, and a 1-5 stress score that makes the plan gentler
 - Installable PWA with offline app shell, block-start notifications (in-page, plus server push for signed-in users), chime and vibration, and a Settings page
