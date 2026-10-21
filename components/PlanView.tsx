@@ -16,6 +16,25 @@ const DOT: Record<StoredBlock["type"], string> = {
   sleep: "var(--dot-sleep)",
 };
 
+function BlockIcon({ type }: { type: StoredBlock["type"] }) {
+  const c = DOT[type];
+  const paths: Record<StoredBlock["type"], React.ReactNode> = {
+    study: <><path d="M4 5.5A1.5 1.5 0 015.5 4H11v15H5.5A1.5 1.5 0 014 17.5z" /><path d="M20 5.5A1.5 1.5 0 0018.5 4H13v15h5.5a1.5 1.5 0 001.5-1.5z" /></>,
+    break: <><path d="M5 8h11v5a4 4 0 01-4 4H9a4 4 0 01-4-4z" /><path d="M16 9h1.5a2 2 0 010 4H16" /><path d="M8 3v2M12 3v2" /></>,
+    revision: <><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z" /><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" /></>,
+    sleep: <path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" />,
+  };
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-8 w-8 items-center justify-center rounded-full"
+      style={{ background: `color-mix(in srgb, ${c} 20%, transparent)`, color: c }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{paths[type]}</svg>
+    </span>
+  );
+}
+
 const ORDINAL = ["", "", "second pass", "third pass", "fourth pass", "fifth pass"];
 
 function countdown(ms: number) {
@@ -45,6 +64,7 @@ export default function PlanView({
   onToggle,
   onEdit,
   onStartOver,
+  fresh,
   onReplan,
   onQuickCheck,
   onToggleMorning,
@@ -56,6 +76,7 @@ export default function PlanView({
   onToggle: (i: number) => void;
   onEdit: () => void;
   onStartOver: () => void;
+  fresh?: boolean;
   onReplan: () => void;
   onQuickCheck: (topic: string, wrong: number) => void;
   onToggleMorning: (i: number) => void;
@@ -124,9 +145,9 @@ export default function PlanView({
     const done = !!plan.done[r.i];
     const isSleep = r.b.type === "sleep";
     return (
-      <li key={r.i} className={`grid grid-cols-[3.5rem_1.5rem_1fr_auto] items-start gap-x-3 border-t border-line py-4 first:border-t-0 sm:grid-cols-[5rem_2rem_1fr_auto] ${past ? "opacity-75" : ""}`}>
+      <li key={r.i} className={`grid grid-cols-[3.25rem_2rem_1fr_auto] items-start gap-x-3 border-t border-line py-4 first:border-t-0 sm:grid-cols-[5rem_2rem_1fr_auto] ${past ? "opacity-75" : ""}`}>
         <span className="tnum pt-0.5 font-mono text-sm text-muted">{r.b.start}</span>
-        <span className="flex justify-center pt-2"><span className="dot" style={{ background: DOT[r.b.type] }} aria-hidden="true" /></span>
+        <span className="flex justify-center"><BlockIcon type={r.b.type} /></span>
         <div className="min-w-0">
           <p className={`font-semibold break-words ${isSleep ? "text-sleepink" : ""} ${done ? "line-through opacity-70" : ""}`}>
             {r.title}
@@ -140,7 +161,7 @@ export default function PlanView({
         ) : (
           <input
             type="checkbox"
-            className="mt-1 h-6 w-6 shrink-0 accent-[var(--accent)]"
+            className="tick mt-0.5"
             checked={done}
             onChange={() => toggle(r)}
             aria-label={`Mark done: ${r.title}, ${r.b.start} to ${r.b.end}`}
@@ -151,7 +172,18 @@ export default function PlanView({
   };
 
   return (
-    <section>
+    <section className="anim-fade-up">
+      {fresh && (
+        <p role="status" className="plan-ready no-print fixed left-1/2 top-4 z-30 -translate-x-1/2 rounded-full border border-nowline bg-now px-5 py-2 font-bold text-accent shadow-lg">
+          ✓ Plan ready
+        </p>
+      )}
+      {plan.aiFailed && (
+        <p role="status" className="no-print mb-6 rounded-2xl border border-line bg-surface2 px-4 py-3">
+          <strong>Couldn&apos;t reach AI, here&apos;s a backup plan.</strong>{" "}
+          <span className="text-muted">It follows the same rules: sleep protected, hardest topics first, breaks built in.</span>
+        </p>
+      )}
       {/* Hero */}
       <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -195,7 +227,7 @@ export default function PlanView({
         {/* Left column */}
         <div className="flex min-w-0 flex-col gap-6">
           {nowRow ? (
-            <div id="now-block" aria-current="step" className="rounded-[1.5rem] border border-nowline bg-now p-6 sm:p-8">
+            <div id="now-block" aria-current="step" className="glow-now rounded-[1.5rem] border border-nowline bg-now p-5 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">

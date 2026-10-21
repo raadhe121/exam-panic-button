@@ -217,7 +217,7 @@ body::before {
 body::after {
   bottom: -25vmax;
   left: -20vmax;
-  background: radial-gradient(circle, #818cf8, transparent 65%);
+  background: radial-gradient(circle, #a78bfa, transparent 65%);
   animation: drift 30s ease-in-out infinite alternate-reverse;
 }
 :root[data-theme="light"] body::before,
@@ -311,4 +311,83 @@ dialog {
   li {
     break-inside: avoid;
   }
+}
+
+/* Small moments: all short and subtle */
+@keyframes pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes ready-in {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  12%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+.anim-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+.plan-ready {
+  animation: ready-in 3.2s ease-in-out both;
+}
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+.glow-now {
+  box-shadow: 0 0 0 1px var(--now-line), 0 0 48px -12px var(--accent);
+}
+
+/* Checkboxes: big tap area, a little pop when ticked */
+.tick {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--muted);
+  background: transparent;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.tick::before {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+}
+.tick::after {
+  content: "";
+  width: 0.9rem;
+  height: 0.9rem;
+  background: var(--accent-ink);
+  clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 8%, 38% 72%);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+.tick:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  animation: pop 0.28s ease-out;
+}
+.tick:checked::after {
+  transform: scale(1);
+}
+
+button, a, label, input, select, textarea {
+  touch-action: manipulation;
 }

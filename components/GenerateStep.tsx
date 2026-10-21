@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import type { AppState } from "@/lib/storage";
 import { checkTiming, clockOf, dayLabel, shortDate } from "@/lib/timing";
 import { durationLabel, inputToMin, toLocalMin } from "@/lib/time";
 import Stepper from "./Stepper";
+
+const LOADING_LINES = ["Putting the hardest topics first...", "Protecting your sleep...", "Adding breaks so you can breathe...", "Almost there..."];
 
 export default function GenerateStep({
   state,
@@ -16,6 +19,15 @@ export default function GenerateStep({
   onBack: () => void;
   onBuild: () => void;
 }) {
+  const [line, setLine] = useState(0);
+  useEffect(() => {
+    if (!building) return;
+    const id = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 900);
+    return () => {
+      clearInterval(id);
+      setLine(0);
+    };
+  }, [building]);
   const nowMin = toLocalMin(new Date());
   const start = inputToMin(state.timing.startAt)!;
   const sleep = inputToMin(state.timing.sleepAt)!;
@@ -76,7 +88,15 @@ export default function GenerateStep({
       </dl>
 
       <div aria-live="polite" className="mb-3 min-h-6">
-        {building && <p role="status" className="font-semibold">Making your plan...</p>}
+        {building && (
+          <div role="status" className="flex items-center gap-3">
+            <span className="spinner" aria-hidden="true" />
+            <div>
+              <p className="font-semibold">Making your plan...</p>
+              <p className="text-sm text-muted">{LOADING_LINES[line]}</p>
+            </div>
+          </div>
+        )}
         {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
       <div className="flex justify-between gap-3">

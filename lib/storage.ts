@@ -22,6 +22,8 @@ export interface StoredPlan {
   blocks: StoredBlock[];
   done: Record<number, boolean>;
   source: "ai" | "fallback";
+  /** AI was available but failed, so the backup planner was used. */
+  aiFailed?: boolean;
   nap: boolean;
   studyWindowMin: number;
   /** Exam start, for the morning-of screen. */

@@ -26,6 +26,7 @@ function toStored(res: PlanResponse, input: PlanInput, nap: boolean): StoredPlan
     summary: res.plan.summary,
     skipped: res.plan.skipped,
     source: res.source,
+    aiFailed: res.aiFailed,
     nap,
     studyWindowMin: input.sleepMin - start,
     done: {},
@@ -44,6 +45,7 @@ export default function PanicApp() {
   const router = useRouter();
   const params = useSearchParams();
   const intent = params.get("new") ? "new" : params.get("open") ? "open" : null;
+  const [fresh, setFresh] = useState(false);
   const [replanning, setReplanning] = useState(false);
   const [replanMsg, setReplanMsg] = useState("");
 
@@ -97,7 +99,7 @@ export default function PanicApp() {
     }
     if (!res) {
       const plan: PlanResult = buildLocalPlan({ ...input, nap });
-      res = { plan, source: "fallback" };
+      res = { plan, source: "fallback", aiFailed: true };
     }
     return toStored(res, input, nap);
   };
@@ -125,6 +127,10 @@ export default function PanicApp() {
       return;
     }
     patch({ plan: stored, stage: "plan" });
+    setFresh(true);
+    setTimeout(() => setFresh(false), 3400);
+    setFresh(true);
+    setTimeout(() => setFresh(false), 3400);
   };
 
   const replan = async () => {
@@ -205,6 +211,7 @@ export default function PanicApp() {
               )
             }
             extra={<PlanActions state={state} onSaved={(examId, examName) => patch({ examId, examName })} onShare={(shareCode) => patch({ shareCode })} />}
+            fresh={fresh}
             onReplan={replan}
             onQuickCheck={quickCheckResult}
             replanning={replanning}

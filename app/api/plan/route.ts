@@ -45,8 +45,9 @@ export async function POST(req: Request) {
   if (!input) return Response.json({ error: "Please check your times and topics." }, { status: 400 });
 
   const ai = await planWithAI(input);
+  const aiConfigured = Boolean(process.env.GROQ_API_KEY || process.env.ANTHROPIC_API_KEY);
   const res: PlanResponse = ai
     ? { plan: ai, source: "ai" }
-    : { plan: buildLocalPlan(input), source: "fallback" };
+    : { plan: buildLocalPlan(input), source: "fallback", aiFailed: aiConfigured };
   return Response.json(res);
 }

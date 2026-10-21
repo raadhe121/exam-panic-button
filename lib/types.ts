@@ -39,6 +39,8 @@ export interface PlanResult {
 export interface PlanResponse {
   plan: PlanResult;
   source: "ai" | "fallback";
+  /** True when an AI key is set but the AI call failed or its plan was rejected. */
+  aiFailed?: boolean;
 }
 
 export const MAX_TOPICS = 15;

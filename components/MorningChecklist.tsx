@@ -35,7 +35,7 @@ export default function MorningChecklist({
         {items.map((t, i) => (
           <li key={i}>
             <label className="flex items-start gap-3">
-              <input type="checkbox" className="mt-0.5 h-6 w-6 shrink-0 accent-[var(--accent)]" checked={!!done[i]} onChange={() => onToggle(i)} />
+              <input type="checkbox" className="tick mt-0.5" checked={!!done[i]} onChange={() => onToggle(i)} />
               <span className={done[i] ? "line-through opacity-70" : ""}>{t}</span>
             </label>
           </li>
