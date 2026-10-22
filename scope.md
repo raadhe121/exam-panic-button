@@ -30,10 +30,3 @@
 ## Still out of scope
 Two-way calendar sync (Google/Outlook API), email/SMS reminders, sharing exams between users, teacher/admin features, languages beyond English/Hindi/Hinglish, native iOS/Android apps (the PWA is the mobile story), minute-precise server push (the cron runs daily on the Vercel free tier; in-page alerts cover the precise timing).
 
-## Done when
-- Landing to full timed plan in under a minute
-- Sleep time is never violated; ordering rules hold
-- "Now" and checkboxes work; plan survives refresh
-- Plan still produced when the AI call fails
-- Good on a phone, basic accessibility checks pass
-- Deployed on Vercel from a public GitHub repo with scope.md, prd.md, spec.md
